@@ -1,0 +1,26 @@
+{
+    "extends": "airbnb-base",
+    "plugins": [
+      "import"
+    ],
+    "rules": {
+      "arrow-body-style": "off",
+      "indent": [0, "tab"],
+      "quotes": [2, "single", {"allowTemplateLiterals": true}],
+      "comma-dangle": "off",
+      "no-plusplus":"off",
+      "no-console":"off"
+    },
+    "env": {
+      "es6": true,
+      "node": true,
+      "mocha": true
+    },
+    "globals": {
+      "it": false,
+      "describe": false,
+      "beforeEach": false,
+      "afterEach": false
+    }
+  }
+  
