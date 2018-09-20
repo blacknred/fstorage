@@ -1,5 +1,3 @@
-/* eslint-disable consistent-return */
-
 const fs = require('fs');
 const Koa = require('koa');
 const path = require('path');
@@ -8,6 +6,7 @@ const cors = require('kcors');
 const serve = require('koa-static');
 const koaBody = require('koa-body');
 const logger = require('koa-logger');
+const debug = require('debug')('storage');
 
 const hosts = require('./hosts');
 const helpers = require('./_helpers');
@@ -15,10 +14,10 @@ const helpers = require('./_helpers');
 const mkdir = util.promisify(fs.mkdir);
 const app = new Koa();
 
-/* logs */
+/* Logs */
 app.use(logger());
 
-/* errors */
+/* Errors */
 app.use(async (ctx, next) => {
     try {
         ctx.set('Content-Disposition', 'attachment');
@@ -34,16 +33,16 @@ app.use(async (ctx, next) => {
     }
 });
 
-/* serve static files */
+/* Serve static files */
 app.use(serve(path.join(__dirname, '/static')));
 
-/* multipart */
+/* Body, multipart */
 app.use(koaBody({ multipart: true }));
 
-/* cors */
+/* Cors */
 app.use(cors()); // { origin: 'http://localhost:3000'}
 
-/* router */
+/* Router */
 app.use(async (ctx, next) => {
     /* eslint-disable no-case-declarations */
     switch (ctx.method) {
@@ -53,7 +52,6 @@ app.use(async (ctx, next) => {
             const fullPath = path.join(__dirname, 'static', dir);
             const files = Object.values(ctx.request.files);
             const seedFrom = ctx.query.seedFrom;
-            console.log(seedFrom);
             try {
                 await mkdir(fullPath);
                 files.forEach(async (file) => {
@@ -75,7 +73,7 @@ app.use(async (ctx, next) => {
                             break;
                         default:
                     }
-                    console.log('uploading %s -> %s', file.name, fileName);
+                    debug('uploading %s -> %s', file.name, fileName);
 
                     // process thumbnail
                     const thumbName = `${Math.random().toString(36).slice(2)}.jpg`;
@@ -86,7 +84,7 @@ app.use(async (ctx, next) => {
                         default:
                     }
 
-                    // form response
+                    // response
                     response.push({
                         file: `${hosts[seedFrom || process.env.NODE_ENV]}/${dir}/${fileName}`,
                         thumb: `${hosts[seedFrom || process.env.NODE_ENV]}/${dir}/${thumbName}`
@@ -104,7 +102,7 @@ app.use(async (ctx, next) => {
             const filePath = path.join(__dirname, 'static', ctx.path);
             try {
                 await fs.unlinkSync(filePath);
-                console.log('deleting %s from %s', ctx.path, filePath);
+                debug('deleting %s from %s', ctx.path, filePath);
                 ctx.body = {
                     status: 'success',
                     data: ctx.path

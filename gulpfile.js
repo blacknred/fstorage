@@ -1,12 +1,12 @@
 const gulp = require('gulp');
-const nodemon = require('gulp-nodemon');
 const eslint = require('gulp-eslint');
+const nodemon = require('gulp-nodemon');
 
 /* tasks */
 
 gulp.task('start', () => {
     nodemon({
-        script: './server',
+        script: './clusters',
         ext: 'js html',
         tasks: ['lint'],
     });
