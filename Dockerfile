@@ -14,7 +14,7 @@ ENV PATH /usr/src/node_modules/.bin:$PATH
 
 # install and cache app dependencies
 ADD package.json /usr/src/package.json
-RUN npm install
+RUN npm install --unsafe-perm=true
 
 # start app
 CMD ["npm", "start"]
