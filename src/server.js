@@ -1,5 +1,5 @@
 const http = require('http');
-const debug = require('debug')('storage:server');
+const debug = require('debug')('fstorage:server');
 
 const app = require('./app');
 
@@ -12,7 +12,7 @@ function normalizePort(val) {
     return false;
 }
 
-const port = normalizePort(process.env.PORT || '3000');
+const port = normalizePort(process.env.PORT || '5000');
 
 function onError(error) {
     if (error.syscall !== 'listen') throw error;

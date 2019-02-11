@@ -6,7 +6,7 @@ const cors = require('kcors');
 const serve = require('koa-static');
 const koaBody = require('koa-body');
 const logger = require('koa-logger');
-const debug = require('debug')('storage');
+const debug = require('debug')('fstorage');
 
 const hosts = require('./hosts');
 const helpers = require('./_helpers');

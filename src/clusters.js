@@ -1,6 +1,6 @@
 const cpus = require('os').cpus();
 const cluster = require('cluster');
-const debug = require('debug')('storage:clusters');
+const debug = require('debug')('fstorage:clusters');
 
 /* Clustering to exploit all the cores of a machine.
     Node is single-threaded by default */
@@ -26,5 +26,5 @@ if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
 } else {
     // Worker process
     // eslint-disable-next-line
-    require('./server.js'); 
+    require('./server'); 
 }

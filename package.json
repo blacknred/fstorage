@@ -1,8 +1,14 @@
 {
-    "name": "restpublica-mocking-files-storage",
-    "version": "0.0.1",
+    "name": "fstorage",
+    "version": "0.1.1",
+    "main": "index.js",
+    "repository": "https://github.com/blacknred/fstorage.git",
+    "author": "blcknrd <tretyakov.dmi@gmail.com>",
+    "license": "MIT",
     "scripts": {
-        "start": "WORKER_COUNT=2 DEBUG=storage:* gulp --gulpfile app/gulpfile.js"
+        "start": "WORKER_COUNT=2 DEBUG=fstorage:* nodemon src",
+        "test": "jest",
+        "lint": "eslint src"
     },
     "dependencies": {
         "debug": "^3.2.6",
@@ -16,11 +22,9 @@
         "sharp": "^0.20.8"
     },
     "devDependencies": {
-        "eslint": "^3.19.0",
+        "eslint": "^5.13.0",
         "eslint-config-airbnb-base": "^11.1.3",
         "eslint-plugin-import": "^2.14.0",
-        "gulp": "^3.9.1",
-        "gulp-eslint": "^3.0.1",
-        "gulp-nodemon": "^2.4.1"
+        "nodemon": "^1.18.10"
     }
 }
