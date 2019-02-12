@@ -6,13 +6,14 @@ reduce image file sizes: imageoptim.com - strip out metadata
 prefer h.264 mp4, webM, progressive jpeg, ?webP, gifs -> mp4
 animated GIFs uploaded to Twitter are actually converted to video.
 npm install imagemin
+
 /?compress=false&thumb=300&format=png&crop=400&progressive=true
 
 Mock storage with API for CREATE, DELETE and GET static posts files
 
 ## Architecture
 
-1. Node, Koa
+1. Ffmpeg, Node, Koa, Sharp
 
 ## Run the project
 
@@ -45,7 +46,7 @@ Mock storage with API for CREATE, DELETE and GET static posts files
 1. Run the container:
 
     ```sh
-    $ docker run -it -p 5000:3000 fserver
+    $ docker run -it -p 5000:5000 fserver
     ```
 1. Go to http://localhost:5000
 

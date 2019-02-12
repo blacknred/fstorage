@@ -6,19 +6,24 @@
     "author": "blcknrd <tretyakov.dmi@gmail.com>",
     "license": "MIT",
     "scripts": {
-        "start": "WORKER_COUNT=2 DEBUG=fstorage:* nodemon src",
+        "start": "WORKER_COUNT=2 DEBUG=fstorage:* PORT=5000 nodemon src",
         "test": "jest",
         "lint": "eslint src"
     },
     "dependencies": {
         "debug": "^3.2.6",
         "fluent-ffmpeg": "^2.1.2",
+        "jwt-simple": "^0.5.5",
         "kcors": "^2.2.2",
         "koa": "^2.6.2",
         "koa-better-body": "^3.0.4",
         "koa-body": "^4.0.4",
+        "koa-compress": "^3.0.0",
+        "koa-helmet": "^4.0.0",
         "koa-logger": "^3.2.0",
         "koa-static": "^5.0.0",
+        "koa-useragent": "^1.2.0",
+        "moment": "^2.24.0",
         "sharp": "^0.20.8"
     },
     "devDependencies": {

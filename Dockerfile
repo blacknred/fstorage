@@ -12,16 +12,17 @@ COPY . ./
 
 # add `/usr/src/node_modules/.bin` to $PATH
 ENV PATH /usr/src/node_modules/.bin:$PATH
+ENV TOKEN_SECRET \x02\xf3\xf7r\t\x9f\xee\xbbu\xb1\xe1\x90\xfe
 
 # install and cache app dependencies
 ADD package.json /usr/src/package.json
 RUN yarn install
 #RUN npm install --unsafe-perm=true
 
-EXPOSE 3000
+EXPOSE 5000
 
 # start app
 CMD ["yarn", "start"]
 
 # docker build . -t fserver
-# docker run -it -v ~+:/usr/src/app -p 5000:3000 fserver
+# docker run -p 5000:5000 -it -v ~+:/usr/src/app fserver

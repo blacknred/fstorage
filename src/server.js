@@ -12,7 +12,7 @@ function normalizePort(val) {
     return false;
 }
 
-const port = normalizePort(process.env.PORT || '5000');
+const port = normalizePort(process.env.PORT || 3000);
 
 function onError(error) {
     if (error.syscall !== 'listen') throw error;
@@ -27,8 +27,8 @@ const server = http.createServer(app.callback());
 
 function onListening() {
     const addr = server.address();
-    const bind = typeof addr === 'string' ? `Pipe ${port}` : `Port ${port}`;
-    debug(`Listening on ${bind}`);
+    const bind = typeof addr === 'string' ? `pipe ${port}` : `port ${port}`;
+    debug(`Server is 🚀  on ${bind}`);
 }
 
 server.listen(port);
