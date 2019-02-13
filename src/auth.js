@@ -1,42 +1,47 @@
 const moment = require('moment');
 const jwt = require('jwt-simple');
 
-function encodeToken(userId) {
-    const playload = {
-        exp: moment().add(14, 'days').unix(),
-        iat: moment().unix(),
-        sub: userId,
+function encodeToken(sub, days) {
+    const payload = {
+        sub,
     };
-    return jwt.encode(playload, process.env.TOKEN_SECRET);
+    if (days) {
+        payload.exp = moment().add(days, 'days').unix();
+    }
+
+    return jwt.encode(payload, process.env.TOKEN_SECRET);
 }
 
-function decodeToken(token, callback) {
+function decodeToken(token) {
     const payload = jwt.decode(token, process.env.TOKEN_SECRET);
-    const now = moment().unix();
-    if (now > payload.exp) callback('Token has expired.');
-    else callback(null, payload);
+    if (payload.exp) {
+        const now = moment().unix();
+        if (now > payload.exp) {
+            throw new Error('Token has expired');
+        }
+    }
+    return payload.sub;
 }
 
 async function checkAuth(ctx, next) {
     if (process.env.NODE_ENV === 'test') {
-        ctx.state.consumer = 1;
         await next();
     }
 
-    const token = ctx.headers['x-access-token'] || ctx.query.access_key;
+    const key = ctx.headers['x-access-key'] || ctx.query.access_key || ctx.ip;
+    const token = ctx.headers['x-access-token'] || ctx.query.access_token;
     if (!token) {
         ctx.throw(401, 'No access token');
     }
 
-    // decode the token
-    decodeToken(token, async (err, payload) => {
-        if (err) {
-            ctx.throw(401, payload);
-        }
-
-        ctx.state.consumer = parseInt(payload.sub, 10);
-        await next();
-    });
+    const sub = await decodeToken(token);
+    if (sub !== key) {
+        ctx.throw(403, 'Permission denied');
+    }
+    await next();
 }
 
-module.exports = checkAuth;
+module.exports = {
+    encodeToken,
+    checkAuth,
+};

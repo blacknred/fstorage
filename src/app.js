@@ -1,13 +1,9 @@
 const Koa = require('koa');
-const zlib = require('zlib');
-const path = require('path');
+const Path = require('path');
 const cors = require('kcors');
 const serve = require('koa-static');
-const koaBody = require('koa-body');
 const logger = require('koa-logger');
 const helmet = require('koa-helmet');
-const compress = require('koa-compress');
-const userAgent = require('koa-useragent');
 
 const router = require('./router');
 
@@ -16,32 +12,18 @@ const app = new Koa();
 /* Logs */
 app.use(logger());
 
-/* Serve static files */
-app.use(serve(path.join(__dirname, '../', 'static')));
-app.use(async (ctx, next) => {
-    ctx.set('Content-Disposition', 'attachment');
-    await next();
-});
-
-/* Body, multipart */
-app.use(koaBody({ multipart: true }));
-
 /* Cors */
-app.use(cors()); // { origin: 'http://localhost:3000'}
+app.use(cors());
 
 /* Prevent bruteforce */
 app.use(helmet());
 
-/* User Agent */
-app.use(userAgent);
-
-/* Compressing */
-app.use(compress({
-    filter: (contentType) => {
-        return /text/i.test(contentType);
-    },
-    threshold: 2048,
-    flush: zlib.Z_SYNC_FLUSH
+/* Serve static files */
+app.use(serve(Path.join(__dirname, '../', 'static'), {
+    maxAge: 30,
+    gzip: true,
+    // defer: true,
+    setHeaders: res => res.setHeader('Content-Disposition', 'attachment'),
 }));
 
 /* Errors */
@@ -62,7 +44,13 @@ app.use(async (ctx, next) => {
 });
 
 /* Router */
-app.use(router);
+app.use(router.routes());
+app.use(router.allowedMethods());
+
+// app.use(function* () {
+//     if (this.req.checkContinue) this.res.writeContinue();
+//     const body = yield parse(this);
+// });
 
 module.exports = app;
 

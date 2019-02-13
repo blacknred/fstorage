@@ -1,19 +1,18 @@
 # FStorage - File procecessing and storage
 
+Image and video files processing and serving static files.
 
-Image and video files processing and storage.
-reduce image file sizes: imageoptim.com - strip out metadata
-prefer h.264 mp4, webM, progressive jpeg, ?webP, gifs -> mp4
-animated GIFs uploaded to Twitter are actually converted to video.
-npm install imagemin
-
-/?compress=false&thumb=300&format=png&crop=400&progressive=true
-
-Mock storage with API for CREATE, DELETE and GET static posts files
-
-## Architecture
+### Architecture
 
 1. Ffmpeg, Node, Koa, Sharp
+
+### API - /api/v1
+
+| Endpoint         | HTTP Method | CRUD Method | Result                                    |
+|------------------|-------------|-------------|-------------------------------------------|
+| /token           | POST        | CREATE      | An access token based on custom key or ip |
+| /serve           | POST        | CREATE      | Process and store file                    |
+| /:name           | DELETE      | DELETE      | Delete file                               |
 
 ## Run the project
 
@@ -61,4 +60,5 @@ Mock storage with API for CREATE, DELETE and GET static posts files
 1. With the apps up, run:
 
     ```sh
-    $ cd server && npm run test
+    $ npm run test
+    ```
