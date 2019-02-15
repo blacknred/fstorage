@@ -1,27 +1,30 @@
-# FStorage - File procecessing and storage
+# FStorage - File server
 
-Image and video files processing and serving static files.
+ * Process rich media files (images & videos).
+ * Store static files as gz.
+ * Serve files at /:storage/:filename
 
-### Architecture
+### Tech
 
-1. Ffmpeg, Node, Koa, Sharp
+ * Ffmpeg, Node, Koa, Sharp
 
 ### API - /api/v1
 
-| Endpoint         | HTTP Method | CRUD Method | Result                                    |
-|------------------|-------------|-------------|-------------------------------------------|
-| /token           | POST        | CREATE      | An access token based on custom key or ip |
-| /serve           | POST        | CREATE      | Process and store file                    |
-| /:name           | DELETE      | DELETE      | Delete file                               |
+| Endpoint        | HTTP Method | CRUD Method | Result                              |
+|-----------------|-------------|-------------|-------------------------------------|
+| /new            | POST        | CREATE      | New storage with access credentials |
+| /restore        | POST        | CREATE      | Restore storage access              |     
+| /:storage       | POST        | CREATE      | Add (& process) file in the storage |
+| /:storage       | GET         | READ        | List of all files in the storage    |
+| /:storage       | DELETE      | DELETE      | Delete storage with files           |
+| /:storage/:name | DELETE      | DELETE      | Delete file from storage            |
 
-## Run the project
+### Run the project
 
-### Setup
+##### Setup
 
 1. Fork/Clone this repo
-
 1. Download [Docker](https://docs.docker.com/docker-for-mac/install/) (if necessary)
-
 1. Make sure you are using a Docker version >= 17:
 
     ```sh
@@ -29,7 +32,7 @@ Image and video files processing and serving static files.
     Docker version 17.03.0-ce, build 60ccb22
     ```
 
-### Build and Run the App
+##### Build and Run the App
 
 1. Build the image:
   
@@ -50,7 +53,7 @@ Image and video files processing and serving static files.
 1. Go to http://localhost:5000
 
 
-### Run tests
+##### Run tests
 
 1. Set the Environment variable
     ```sh

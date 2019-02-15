@@ -9,9 +9,6 @@ const router = require('./router');
 
 const app = new Koa();
 
-/* Logs */
-app.use(logger());
-
 /* Cors */
 app.use(cors());
 
@@ -20,11 +17,15 @@ app.use(helmet());
 
 /* Serve static files */
 app.use(serve(Path.join(__dirname, '../', 'static'), {
-    maxAge: 30,
+    maxage: 300000,
     gzip: true,
     // defer: true,
+    // extensions: true,
     setHeaders: res => res.setHeader('Content-Disposition', 'attachment'),
 }));
+
+/* Logs */
+app.use(logger());
 
 /* Errors */
 app.use(async (ctx, next) => {
@@ -46,11 +47,6 @@ app.use(async (ctx, next) => {
 /* Router */
 app.use(router.routes());
 app.use(router.allowedMethods());
-
-// app.use(function* () {
-//     if (this.req.checkContinue) this.res.writeContinue();
-//     const body = yield parse(this);
-// });
 
 module.exports = app;
 

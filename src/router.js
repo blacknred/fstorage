@@ -1,27 +1,23 @@
-const zlib = require('zlib');
 const body = require('koa-body');
 const Router = require('koa-router');
-const compress = require('koa-compress');
 
 const {
-    checkAuth,
-} = require('./auth');
+    tokenAccess,
+    storageAccess,
+    secretKeyAccess,
+} = require('./permissions');
 const {
-    createToken,
-    serveFile,
+    addFile,
     deleteFile,
+    listStorage,
+    createStorage,
+    restoreAccess,
+    deleteStorage,
 } = require('./handlers');
 
 const OPTS = {
     body: {
         multipart: true,
-    },
-    compress: {
-        filter: (contentType) => {
-            return /jpg/i.test(contentType);
-        },
-        threshold: 2048,
-        flush: zlib.Z_SYNC_FLUSH,
     },
 };
 
@@ -30,8 +26,14 @@ const router = new Router({
 });
 
 router
-    .post('/token', body(OPTS.body), createToken)
-    .post('/serve', checkAuth, body(OPTS.body), compress(OPTS.compress), serveFile)
-    .del('/:name', checkAuth, deleteFile);
+    .post('*', body(OPTS.body))
+    .param('storage', tokenAccess, storageAccess)
+
+    .post('/new', createStorage)
+    .post('/restore', restoreAccess)
+    .post('/:storage', addFile)
+    .get('/:storage', listStorage)
+    .delete('/:storage', secretKeyAccess, deleteStorage)
+    .delete('/:storage/:name', deleteFile);
 
 module.exports = router;
