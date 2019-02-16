@@ -1,71 +1,50 @@
-const fs = require('fs');
-const Path = require('path');
-const crypto = require('crypto');
 const debug = require('debug')('fstorage:handlers');
 
 const {
     encodeToken,
 } = require('./permissions');
 const {
-    processGif,
+    readDir,
+    checkKey,
+    saveFile,
+    isExists,
+    createDir,
+    createKey,
+    deleteDir,
+    deleteKey,
+    generateName,
+} = require('./helpers');
+const {
     processImage,
     processVideo,
-    processDefault,
-} = require('./helpers');
+} = require('./processing');
 
-const IS_SIMPLE_KEY_STRATEGY = true;
-const TARGET_DIR = Path.join(__dirname, '../', 'static');
-
-/* Create a storage:
-=> name(client domain by default)
-=> dayspan(optional, for short lived token)
-=> email(optional, for sending credentials)
-<= access token(encrypts data using SECRET)
-<= secret key(needed for some operations)
-<= storage name
-*/
-async function createStorage(ctx) {
+function createStorage(ctx) {
     const {
         dayspan,
         email,
         name: storageName = ctx.hostname.split('.')[0],
     } = ctx.request.body;
 
-    const storagePath = Path.join(TARGET_DIR, storageName);
-
-    // try to create dir
-    if (fs.existsSync(storagePath)) {
+    if (isExists(storageName)) {
         ctx.throw(422, `The storage ${storageName} allready in use`);
     }
-    fs.mkdirSync(storagePath, {
-        recursive: true,
-    });
+
+    // create storage
+    createDir(storageName);
 
     // gen secret key
-    let secretKey;
-    if (IS_SIMPLE_KEY_STRATEGY) {
-        // by inode
-        const { ino } = fs.statSync(storagePath);
-        secretKey = ino;
-    } else {
-        // by add key as user and chown dir
-        // eslint-disable-next-line
-        const { execSync } = require('child_process');
-        secretKey = crypto.randomBytes(4).toString('hex');
-        // Math.random().toString(36).slice(2);
-        execSync(`useradd ${secretKey}`);
-        // execSync(`chown ${secretKey}:group ${storagePath}`);
-        const uid = execSync(`id -u ${secretKey}`);
-        fs.chownSync(storagePath, uid, null);
-    }
+    const secretKey = createKey(storageName);
 
     // gen token
-    const accessToken = await encodeToken(storageName, secretKey, dayspan);
+    const accessToken = encodeToken(storageName, secretKey, dayspan);
 
     // send email
     if (email) {
-        // TODO: sent credentials to email
+        // TODO: nodemailer: sent credentials to email
     }
+
+    debug('creating %s', storageName);
 
     ctx.status = 201;
     ctx.body = {
@@ -78,54 +57,30 @@ async function createStorage(ctx) {
     };
 }
 
-/* Restore the storage access:
-=> secret key
-=> name(client domain by default)
-=> dayspan(optional, for short lived token)
-=> email(optional, for sending credentials)
-<= new access token
-*/
-async function restoreAccess(ctx) {
+function restoreAccess(ctx) {
     const {
         dayspan,
         email,
         secretKey,
         name: storageName = ctx.hostname.split('.')[0],
     } = ctx.request.body;
-    const storagePath = Path.join(TARGET_DIR, storageName);
 
     // check dir existance
-    if (!fs.existsSync(storagePath)) {
+    if (!isExists(storageName)) {
         ctx.throw(422, `The storage ${storageName} not in use`);
     }
 
     // check secret key
-    const { ino, uid } = fs.statSync(storagePath);
-    try {
-        if (IS_SIMPLE_KEY_STRATEGY) {
-            // by inode
-            if (secretKey !== ino) {
-                throw new Error();
-            }
-        } else {
-            // by uid
-            // eslint-disable-next-line
-            const { execSync } = require('child_process');
-            const realUid = execSync(`id -u ${secretKey}`);
-            if (realUid !== uid) {
-                throw new Error();
-            }
-        }
-    } catch (e) {
+    if (!checkKey(storageName, secretKey)) {
         ctx.throw(403, 'Secret key is not valid');
     }
 
     // gen new token
-    const accessToken = await encodeToken(storageName, secretKey, dayspan);
+    const accessToken = encodeToken(storageName, secretKey, dayspan);
 
     // send email
     if (email) {
-        // TODO: sent credentials to email
+        // TODO: nodemailer: sent credentials to email
     }
 
     ctx.status = 201;
@@ -137,35 +92,11 @@ async function restoreAccess(ctx) {
     };
 }
 
-/* List files in storage
-=> storage name
-<= [fileData]
-*/
-async function listStorage(ctx) {
+function listStorage(ctx) {
     const { storage: storageName } = ctx.params;
-    const storagePath = Path.join(TARGET_DIR, storageName);
 
-    // check dir existance
-    if (!fs.existsSync(storagePath)) {
-        ctx.throw(422, 'The storage not exist');
-    }
-
-    // get files only
-    const data = fs
-        .readdirSync(storagePath)
-        .reduce((acc, name) => {
-            const path = Path.join(storagePath, name);
-            const stat = fs.lstatSync(path);
-            if (stat.isFile()) {
-                acc.push({
-                    name,
-                    size: stat.size,
-                    created_at: stat.ctime,
-                    updated_at: stat.mtime,
-                });
-            }
-            return acc;
-        }, []);
+    // get files
+    const data = readDir(storageName);
 
     ctx.body = {
         ok: true,
@@ -173,124 +104,109 @@ async function listStorage(ctx) {
     };
 }
 
-/* Delete storage with all files
-=> storage name
-<= boolean
-*/
-async function deleteStorage(ctx) {
+function deleteStorage(ctx) {
     const { storage: storageName } = ctx.params;
-    const storagePath = Path.join(TARGET_DIR, storageName);
-
-    // check dir existance
-    if (!fs.existsSync(storagePath)) {
-        ctx.throw(422, 'The storage not exist');
-    }
+    const { key: secretKey } = ctx.state;
 
     // delete storage
-    fs.rmdirSync(storagePath);
+    deleteDir(storageName);
 
-    // delete secretKey user
-    if (!IS_SIMPLE_KEY_STRATEGY) {
-        // eslint-disable-next-line
-        const { execSync } = require('child_process');
-        const { key: secretKey } = ctx.state;
-        execSync(`userdel -r ${secretKey}`);
-    }
+    // delete secretKey
+    deleteKey(secretKey);
+
+    debug('deleting %s', storageName);
 
     ctx.body = {
         ok: true,
     };
 }
 
-/* Delete file from storage
-=> file name
-=> storage name
-<= boolean
-*/
 function deleteFile(ctx) {
     const {
-        name,
+        file: fileName,
         storage: storageName,
     } = ctx.params;
-    let fileName = name;
-    if (Path.extname(name) !== '.gz') {
-        fileName = `${name}.gz`;
-    }
-    const filePath = Path.join(TARGET_DIR, storageName, fileName);
-
-    // check file existance
-    if (!fs.existsSync(filePath)) {
-        ctx.throw(422, 'The file not exist');
-    }
 
     // remove file
-    fs.unlinkSync(filePath);
-    debug('deleting %s from %s', name, filePath);
+    deleteFile(storageName, fileName);
+
+    debug('deleting %s from %s', fileName, storageName);
 
     ctx.body = {
         ok: true,
     };
 }
 
-/* Add file in storage
-
-*/
 async function addFile(ctx) {
-    const {
-        thumb = true,
-        format = true,
-        versions = false,
-    } = ctx.query;
     const opts = {
-        thumb,
-        format,
-        versions,
+        thumb: ctx.query.thumb || true,
+        format: ctx.query.format || true,
+        versions: ctx.query.versions || false,
     };
-    const links = [];
+
     const { storage: storageName } = ctx.params;
-    const storagePath = Path.join(TARGET_DIR, storageName);
+
     const files = Object.values(ctx.request.files);
+
+    const data = [];
 
     // check files presence
     if (files.length === 0) {
         ctx.throw(400, 'No files');
     }
 
-    // check dir existance
-    if (!fs.existsSync(storagePath)) {
-        ctx.throw(422, 'The storage not exist');
-    }
+    files.forEach(async (file) => {
+        const filename = generateName();
 
-    // process files
-    files.forEach(async ({ size, path, name, type }) => {
-        console.log(name);
-        const filename = crypto.randomBytes(16).toString('hex');
-        const output = Path.join(storagePath, filename);
+        let processed;
 
-        switch (type.split('/')[0]) {
+        // process file
+        switch (file.type.split('/')[0]) {
             case 'video':
-                links.push(await processVideo(path, output, opts));
+                processed = await processVideo(file.path, file.name, opts);
                 break;
             case 'image':
-                if (type === 'image/gif') {
-                    links.push(await processGif(path, output, opts));
-                    break;
+                if (file.type === 'image/gif' && opts.format) {
+                    processed = await processVideo(file.path, file.name, opts);
+                } else {
+                    processed = await processImage(file.path, file.name, opts);
                 }
-                links.push(await processImage(path, output, opts));
                 break;
             default:
-                links.push(await processDefault(path, output));
         }
 
-        debug('uploading %s ->  %i', name, size);
-        // console.log(ctx.headers.origin, ctx.headers.host);
-        // console.log(`${ctx.protocol}://${ctx.get('host')}`);
-        // const from = ctx.hostname.split('.')[0];
+        // save files
+        Object.keys(processed).forEach(async (ext) => {
+            const filepath = await saveFile(processed[key], storageName, filename + ext);
+
+            // form result
+            links.push(`${ctx.protocol}://${ctx.get('host')}/${filepath}`);
+        })
+
+        // // save files
+        // const filepath = await saveFile(processed[''], storageName, filename + ext);
+        // links.file = `${ctx.protocol}://${ctx.get('host')}/${filepath}`;
+        // if (opts.thumb) {
+        //     const filepath = await saveFile(processed[''], storageName, filename + ext);
+        //     links.thumb = `${ctx.protocol}://${ctx.get('host')}/${filepath}`;
+        // }
+        // if (opts.versions) {
+        //     Object.keys(processed).forEach(async (ext) => {
+        //         const filepath = await saveFile(processed[key], storageName, filename + ext);
+        //         links.versions.push(`${ctx.protocol}://${ctx.get('host')}/${filepath}`);
+        //     });
+        // }
+
+        // update response
+        data.push(links);
+
+        debug('uploading %i %s ->  %s', file.size, file.name, storageName);
+        
     });
 
     ctx.body = {
         ok: true,
-        data: links,
+        data,
     };
 }
 

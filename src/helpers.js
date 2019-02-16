@@ -1,182 +1,155 @@
 const fs = require('fs');
-const Path = require('path');
 const zlib = require('zlib');
-const sharp = require('sharp');
-const ffmpeg = require('fluent-ffmpeg');
+const util = require('util');
+const Path = require('path');
+const crypto = require('crypto');
+const { execSync } = require('child_process');
+
+const IS_SIMPLE_KEY_STRATEGY = true;
+
+const IS_COMPRESSION = process.env.COMPRESSION || true;
+
+const STATIC_DIR = Path.join(__dirname, '../', 'static');
+
+const logFile = fs.createWriteStream(Path.join(__dirname, '../', 'errors.log'), {
+    flags: 'a',
+});
 
 const gzip = zlib.createGzip({
     level: 9,
 });
 
-const DEFAULTS = {
-    format: {
-        video: 'mp4', // webm
-        image: 'jpeg', // webP
-        gif: 'mp4',
-        audioCodec: 'libfaac',
-        videoCodec: 'libx264',
-    },
-    formats: {
-        video: [],
-        image: [],
-    },
-    versions: {
-        video: {
-            small: '320x?',
-            medium: '640x?',
-        },
-        image: {
-            small: 320,
-            medium: 640,
-        },
-    },
-    options: {
-        image: {
-            jpeg: {
-                quality: 100,
-                progressive: true,
-            },
-        },
-    },
-};
-
-function processVideo(input, output, opts) {
-    const {
-        thumb,
-        format,
-        versions,
-    } = opts;
-    const command = ffmpeg(input);
-    let ext = Path.extname(name);
-    if (format) {
-        ext = `.${DEFAULTS.format.video}`;
-        command
-            .format(DEFAULTS.format.video)
-            // .aspect('4:3')
-            .audioCodec(DEFAULTS.format.audioCodec)
-            .videoCodec(DEFAULTS.format.videoCodec);
-    }
-    if (versions) {
-        command
-            .clone()
-            .size(DEFAULTS.versions.video.small)
-            .pipe(gzip)
-            .pipe(fs.createWriteStream(`${output}_small${ext}.gz`));
-        command
-            .clone()
-            .size(DEFAULTS.versions.video.medium)
-            .pipe(gzip)
-            .pipe(fs.createWriteStream(`${output}_medium${ext}.gz`));
-    }
-    if (thumb) {
-        command
-            .clone()
-            .size(DEFAULTS.versions.video.small)
-            .noAudio()
-            .seek('0:01')
-            .pipe(gzip)
-            .pipe(fs.createWriteStream(`${output}_thumb.${DEFAULTS.format.image}.gz`));
-    }
-    command
-        .clone()
-        .pipe(gzip)
-        .pipe(fs.createWriteStream(`${output}${ext}.gz`));
+function getFullPath(...path) {
+    return Path.join(STATIC_DIR, ...path)
 }
 
-function processGif(input, output, opts) {
-    const {
-        thumb,
-        format,
-        versions,
-    } = opts;
-    const command = ffmpeg(input);
-    let ext = Path.extname(name);
-    if (format) {
-        ext = `.${DEFAULTS.format.video}`;
-        command
-            .format(DEFAULTS.format.video)
-            // .aspect('4:3')
-            .audioCodec(DEFAULTS.format.audioCodec)
-            .videoCodec(DEFAULTS.format.videoCodec);
+function createKey(storageName) {
+    const path = getFullPath(storageName);
+
+    if (IS_SIMPLE_KEY_STRATEGY) {
+        // by inode
+        const { ino } = fs.statSync(path);
+        return ino;
     }
-    if (versions) {
-        command
-            .clone()
-            .size(DEFAULTS.versions.video.small)
-            .pipe(gzip)
-            .pipe(fs.createWriteStream(`${output}_small${ext}.gz`));
-        command
-            .clone()
-            .size(DEFAULTS.versions.video.medium)
-            .pipe(gzip)
-            .pipe(fs.createWriteStream(`${output}_medium${ext}.gz`));
-    }
-    if (thumb) {
-        command
-            .clone()
-            .size(DEFAULTS.versions.video.small)
-            .noAudio()
-            .seek('0:01')
-            .pipe(gzip)
-            .pipe(fs.createWriteStream(`${output}_thumb.${DEFAULTS.format.image}.gz`));
-    }
-    command
-        .clone()
-        .pipe(gzip)
-        .pipe(fs.createWriteStream(`${output}${ext}.gz`));
+
+    // by add key as user and chown dir
+    const key = crypto.randomBytes(4).toString('hex');
+    // Math.random().toString(36).slice(2);
+    execSync(`useradd ${key}`);
+    // execSync(`chown ${key}:group ${storagePath}`);
+    const uid = execSync(`id -u ${key}`);
+    fs.chownSync(path, uid, null);
+    return key;
 }
 
-function processImage(input, output, opts) {
+function checkKey(storageName, key) {
+    const path = getFullPath(storageName);
+
     const {
-        thumb,
-        format,
-        versions,
-    } = opts;
-    const command = sharp(input);
-    let ext = Path.extname(name);
-    if (format) {
-        ext = `.${DEFAULTS.format.image}`;
-        command
-            .toFormat(
-                DEFAULTS.format.image,
-                DEFAULTS.options.image[DEFAULTS.formats.image]
-            );
+        ino,
+        uid,
+    } = fs.statSync(path);
+    if (IS_SIMPLE_KEY_STRATEGY) {
+        // by inode
+        return key === ino;
     }
-    if (versions) {
-        command
-            .clone()
-            .resize(DEFAULTS.versions.image.medium)
-            .pipe(gzip)
-            .pipe(fs.createWriteStream(`${output}_medium${ext}.gz`));
-        command.clone()
-            .resize(DEFAULTS.versions.image.small)
-            .pipe(gzip)
-            .pipe(fs.createWriteStream(`${output}_small${ext}.gz`));
-    }
-    if (thumb) {
-        command
-            .clone()
-            .resize(DEFAULTS.versions.image.small)
-            .pipe(gzip)
-            .pipe(fs.createWriteStream(`${output}_thumb${ext}.gz`));
-    }
-    command
-        .clone()
-        .pipe(gzip)
-        .pipe(fs.createWriteStream(`${output}${ext}.gz`));
+
+    // by uid
+    const realUid = execSync(`id -u ${key}`);
+    return realUid === uid;
 }
 
-function processDefault(input, output) {
-    fs
-    .createReadStream(input)
-    .pipe(gzip)
-    .pipe(fs.createWriteStream(`${output}${ext}.gz`));
+function deleteKey(key) {
+    if (!IS_SIMPLE_KEY_STRATEGY) {
+        execSync(`userdel -r ${key}`);
+    }
+}
+
+function isExists(...name) {
+    const path = getFullPath(...name);
+
+    return fs.existsSync(path);
+}
+
+function createDir(name) {
+    const path = getFullPath(name);
+
+    fs.mkdirSync(path, {
+        recursive: true,
+    });
+}
+
+function readDir(storageName) {
+    const path = getFullPath(storageName);
+
+    return fs
+        .readdirSync(path)
+        .reduce((acc, name) => {
+            const filePath = Path.join(path, name);
+            const stat = fs.lstatSync(filePath);
+            if (stat.isFile()) {
+                acc.push({
+                    name,
+                    size: stat.size,
+                    created_at: stat.ctime,
+                    updated_at: stat.mtime,
+                });
+            }
+            return acc;
+        }, []);
+}
+
+function deleteDir(storageName) {
+    const path = getFullPath(storageName);
+
+    fs.rmdirSync(path);
+}
+
+function deleteFile(storageName, fileName) {
+    if (Path.extname(fileName) !== '.gz') {
+        // eslint-disable-next-line
+        fileName = `${fileName}.gz`;
+    }
+
+    const path = getFullPath(storageName, fileName);
+
+    fs.unlinkSync(path);
+}
+
+function generateName() {
+    return crypto.randomBytes(16).toString('hex');
+}
+
+function saveFile(stream, storageName, fileName) {
+    if (IS_COMPRESSION) {
+        // eslint-disable-next-line
+        fileName = `${fileName}.gz`;
+
+        stream.pipe(gzip);
+    }
+
+    const path = getFullPath(storageName, fileName);
+
+    stream.pipe(fs.createWriteStream(path));
+
+    return Path.join(storageName, fileName);
+}
+
+function fileOutput(str, args) {
+    console.log(str);
+    logFile.write(util.format(str) + '\n');
 }
 
 module.exports = {
-    processGif,
-    processImage,
-    processVideo,
-    processDefault,
+    readDir,
+    isExists,
+    saveFile,
+    checkKey,
+    createKey,
+    deleteKey,
+    createDir,
+    deleteDir,
+    deleteFile,
+    fileOutput,
+    generateName,
 };
-

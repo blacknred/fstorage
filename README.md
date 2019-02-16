@@ -1,8 +1,8 @@
 # FStorage - File server
 
- * Process rich media files (images & videos).
- * Store static files as gz.
- * Serve files at /:storage/:filename
+ * Processing (image/video).
+ * Compressing.
+ * Serving files /:storage/:filename
 
 ### Tech
 
@@ -13,11 +13,11 @@
 | Endpoint        | HTTP Method | CRUD Method | Result                              |
 |-----------------|-------------|-------------|-------------------------------------|
 | /new            | POST        | CREATE      | New storage with access credentials |
-| /restore        | POST        | CREATE      | Restore storage access              |     
+| /restore        | POST        | CREATE      | Restore storage access              |    
 | /:storage       | POST        | CREATE      | Add (& process) file in the storage |
 | /:storage       | GET         | READ        | List of all files in the storage    |
 | /:storage       | DELETE      | DELETE      | Delete storage with files           |
-| /:storage/:name | DELETE      | DELETE      | Delete file from storage            |
+| /:storage/:file | DELETE      | DELETE      | Delete file from storage            |
 
 ### Run the project
 
