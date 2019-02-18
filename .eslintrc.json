@@ -22,7 +22,7 @@
       "afterEach": false,
       "test": false,
       "expect": false,
-      "FormData": false,
+      "FormData": false
     }
   }
   

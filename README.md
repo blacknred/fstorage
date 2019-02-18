@@ -13,9 +13,12 @@
 | Endpoint        | HTTP Method | CRUD Method | Result                              |
 |-----------------|-------------|-------------|-------------------------------------|
 | /new            | POST        | CREATE      | New storage with access credentials |
-| /restore        | POST        | CREATE      | Restore storage access              |    
+| /token          | POST        | CREATE      | Create a new storage access token   |    
 | /:storage       | POST        | CREATE      | Add (& process) file in the storage |
 | /:storage       | GET         | READ        | List of all files in the storage    |
+| /:storage/:file | GET         | READ        | Get file statistics                 |
+| /:storage       | PUT         | UPDATE      | Update storage with files           |
+| /:storage/:file | PUT         | UPDATE      | Delete file from storage            |
 | /:storage       | DELETE      | DELETE      | Delete storage with files           |
 | /:storage/:file | DELETE      | DELETE      | Delete file from storage            |
 

@@ -1,3 +1,5 @@
+/* eslint-disable no-return-assign */
+
 const Path = require('path');
 const sharp = require('sharp');
 const ffmpeg = require('fluent-ffmpeg');
@@ -39,7 +41,7 @@ const DEFAULTS = {
 };
 
 function processVideo(input, name, opts) {
-    const ext = Path.extname(name);
+    let ext = Path.extname(name);
 
     const streams = {};
 
@@ -82,7 +84,7 @@ function processVideo(input, name, opts) {
 }
 
 function processImage(input, name, opts) {
-    const ext = Path.extname(name);
+    let ext = Path.extname(name);
 
     const streams = {};
 
@@ -98,7 +100,7 @@ function processImage(input, name, opts) {
             );
     }
 
-    if (versions) {
+    if (opts.versions) {
         operation
             .clone()
             .resize(DEFAULTS.versions.image.medium)
@@ -110,7 +112,7 @@ function processImage(input, name, opts) {
             .then(strm => streams[`_small${ext}`] = strm);
     }
 
-    if (thumb) {
+    if (opts.thumb) {
         operation
             .clone()
             .resize(DEFAULTS.thumbs.image)

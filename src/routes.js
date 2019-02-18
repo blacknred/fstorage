@@ -1,50 +1,75 @@
-const body = require('koa-body');
-const Router = require('koa-router');
-const { RateLimit: { middleware: limiter } } = require('koa2-ratelimit');
-
-const {
-    addFile,
-    deleteFile,
-    listStorage,
-    createStorage,
-    restoreAccess,
-    deleteStorage,
-} = require('./handlers');
 const {
     fileAccess,
-    tokenAccess,
     storageAccess,
 } = require('./permissions');
+const {
+    getFile,
+    createFile,
+    updateFile,
+    deleteFile,
+} = require('./controllers/file');
+const {
+    getStorage,
+    createStorage,
+    updateStorage,
+    deleteStorage,
+    createNewToken,
+} = require('./controllers/storage');
 
-const OPTS = {
-    body: {
-        multipart: true,
+module.exports = [
+    {
+        path: 'storage',
+        method: 'param',
+        action: storageAccess,
     },
-    ratelimit: {
-        interval: 15 * 60 * 1000,
-        max: process.env.MAX_REQUESTS_PER_INTERVAL || 33,
-        delayAfter: 1,
-        timeWait: 3 * 1000,
-        skip: () => process.env.NODE_ENV === 'test',
-        message: 'Too many requests, please try again after',
+    {
+        path: 'file',
+        method: 'param',
+        action: fileAccess,
     },
-};
-
-const router = new Router({
-    prefix: '/api/v1',
-});
-
-router
-    .all('*', limiter(OPTS.ratelimit))
-    .post('*', body(OPTS.body))
-    .param('storage', tokenAccess, storageAccess)
-    .param('file', fileAccess)
-
-    .post('/new', createStorage)
-    .post('/restore', restoreAccess)
-    .post('/:storage', addFile)
-    .get('/:storage', listStorage)
-    .delete('/:storage', deleteStorage)
-    .delete('/:storage/:file', deleteFile);
-
-module.exports = router;
+    {
+        path: '/new',
+        method: 'post',
+        action: createStorage,
+    },
+    {
+        path: '/token',
+        method: 'post',
+        action: createNewToken,
+    },
+    {
+        path: '/:storage',
+        method: 'post',
+        action: createFile,
+    },
+    {
+        path: '/:storage',
+        method: 'get',
+        action: getStorage,
+    },
+    {
+        path: '/:storage/:file',
+        method: 'get',
+        action: getFile,
+    },
+    {
+        path: '/:storage',
+        method: 'put',
+        action: updateStorage,
+    },
+    {
+        path: '/:storage/:file',
+        method: 'put',
+        action: updateFile,
+    },
+    {
+        path: '/:storage',
+        method: 'delete',
+        action: deleteStorage,
+    },
+    {
+        path: '/:storage/:file',
+        method: 'delete',
+        action: deleteFile,
+    },
+];
