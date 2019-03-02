@@ -28,7 +28,7 @@ const server = http.createServer(app.callback());
 function onListening() {
     const addr = server.address();
     const bind = typeof addr === 'string' ? `pipe ${port}` : `port ${port}`;
-    debug(`Server is 🚀  on ${bind}`);
+    debug(`🚀  on ${bind}`);
 }
 
 server.listen(port);

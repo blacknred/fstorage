@@ -18,7 +18,7 @@ const routes = require('./routes');
 
 const IS_DEV = process.env.NODE_ENV !== 'production';
 
-const STATIC_PATH = Path.join(__dirname, '../', 'static');
+const STATIC_PATH = Path.join(__dirname, '../', 'files');
 
 const OPTS = {
     body: {
@@ -58,7 +58,7 @@ api.use(RateLimit.middleware(OPTS.ratelimit));
 api.use(body(OPTS.body));
 
 /* Logger */
-api.use(logger())
+api.use(logger());
 
 /* Errors */
 api.use(async (ctx, next) => {
@@ -71,7 +71,7 @@ api.use(async (ctx, next) => {
     } catch (err) {
         ctx.status = err.status || 500;
         if (IS_DEV && ctx.status === 500) {
-            fileStdout(err.message)
+            fileStdout(err.message);
         }
         ctx.body = {
             status: 'error',

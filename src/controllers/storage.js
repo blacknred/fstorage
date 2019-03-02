@@ -3,26 +3,23 @@ const debug = require('debug')('fstorage');
 const {
     encodeToken,
 } = require('../permissions');
-const Storage = require('../models/FStorage');
+const Storage = require('../storage');
 
 function createStorage(ctx) {
     const {
         email,
         tokenDayout,
-        private: isPrivate = true,
+        private: isPrivate = false,
         name = ctx.hostname.split('.')[0],
     } = ctx.request.body;
 
     // check storage existence
-    if (Storage.exist(name)) {
+    if (Storage.isExist(name)) {
         ctx.throw(422, `The storage ${name} allready in use`);
     }
 
-    // instance
-    const storage = new Storage(name, isPrivate);
-
     // create storage
-    storage.create();
+    const storage = new Storage(name, isPrivate);
 
     // gen token
     const accessToken = encodeToken(name, storage.key, tokenDayout);
@@ -38,9 +35,9 @@ function createStorage(ctx) {
     ctx.body = {
         ok: true,
         data: {
-            secretKey,
+            name,
             accessToken,
-            storageName,
+            secretKey: storage.key,
         },
     };
 }
@@ -59,7 +56,7 @@ function createNewToken(ctx) {
     }
 
     // check secret key
-    if (!Storage.checkKey(storageName, secretKey)) {
+    if (!Storage.validKey(storageName, secretKey)) {
         ctx.throw(403, 'Secret key is not valid');
     }
 
@@ -86,7 +83,7 @@ function getStorage(ctx) {
     } = ctx.params;
 
     // get files
-    const data = Storage.list(name);
+    const data = Storage.find(name).list();
 
     ctx.body = {
         ok: true,
@@ -95,17 +92,25 @@ function getStorage(ctx) {
 }
 
 function updateStorage(ctx) {
-    const opts = {
-        private: ctx.request.body.private,
-        empty: ctx.request.body.empty,
-    };
+    const {
+        empty,
+        private: isPrivate,
+    } = ctx.request.body;
 
     const {
         storage: name,
     } = ctx.params;
 
+    const storage = Storage.find(name);
+
     // update storage
-    Storage.update(name, opts);
+    if (empty) {
+        storage.clear();
+    }
+
+    if (isPrivate) {
+        storage.private();
+    }
 
     ctx.body = {
         ok: true,
@@ -118,7 +123,7 @@ function deleteStorage(ctx) {
     } = ctx.params;
 
     // delete storage
-    Storage.destroy(name);
+    Storage.find(name).destroy();
 
     debug('deleting storage %s', name);
 

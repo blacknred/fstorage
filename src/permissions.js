@@ -1,7 +1,7 @@
 const moment = require('moment');
 const jwt = require('jwt-simple');
 
-const Storage = require('./models/FStorage');
+const Storage = require('./storage');
 
 function encodeToken(name, key, days) {
     const payload = {
@@ -20,7 +20,7 @@ function decodeToken(token) {
 }
 
 async function storageAccess(storage, ctx, next) {
-    if (!Storage.exist(storage)) {
+    if (!Storage.exists(storage)) {
         ctx.throw(422, 'The storage not exist');
     }
 
@@ -62,7 +62,7 @@ async function fileAccess(file, ctx, next) {
         storage,
     } = ctx.params;
 
-    if (!Storage.exist(storage, file)) {
+    if (!Storage.exists(storage, file)) {
         ctx.throw(422, 'The file not exist');
     }
 

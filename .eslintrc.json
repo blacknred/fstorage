@@ -9,7 +9,9 @@
       "quotes": [2, "single", {"allowTemplateLiterals": true}],
       "comma-dangle": "off",
       "no-plusplus":"off",
-      "no-console":"off"
+      "no-console":"off",
+      "no-underscore-dangle":"off",
+      "camelcase":"off"
     },
     "env": {
       "es6": true,
@@ -18,6 +20,7 @@
     },
     "globals": {
       "describe": false,
+      "beforeAll": false,
       "beforeEach": false,
       "afterEach": false,
       "test": false,

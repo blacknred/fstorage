@@ -2,10 +2,7 @@
 const {
     execSync,
 } = require('child_process');
-
-const {
-    genId,
-} = require('../helpers');
+const crypto = require('crypto');
 
 /**
  * Class representing a uidkey.
@@ -14,19 +11,13 @@ const {
  */
 module.exports = class UidKey {
     constructor() {
-        this.key = genId(8);
+        this._key = crypto.randomBytes(4).toString('hex');
+
+        execSync(`useradd ${this.key}`);
     }
 
     get key() {
-        return this.key;
-    }
-
-    set key(key) {
-        this.key = key;
-    }
-
-    save() {
-        execSync(`useradd ${this.key}`);
+        return this._key;
     }
 
     static compare(key, uid) {

@@ -9,9 +9,7 @@
         "start": "WORKER_COUNT=2 DEBUG=fstorage:* PORT=5000 nodemon src",
         "serve": "koa-cluster src/app",
         "lint": "eslint src",
-        "test": "npm run test:unit && npm run test:integration",
-        "test:unit": "jest tests/unit",
-        "test:integration": "jest --forceExit --detectOpenHandles tests/integration"
+        "test": "jest"
     },
     "dependencies": {
         "debug": "^3.2.6",

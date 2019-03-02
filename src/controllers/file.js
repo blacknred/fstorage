@@ -2,7 +2,7 @@ const debug = require('debug')('fstorage');
 
 const File = require('../models/File');
 
-const Storage = require('../models/FStorage');
+const Storage = require('../storage');
 
 async function createFile(ctx) {
     const opts = {
@@ -53,7 +53,7 @@ function getFile(ctx) {
     } = ctx.params;
 
     // get stat
-    const data = Storage.get(storageName, name);
+    const data = Storage.find(storageName).stat(name);
 
     ctx.body = {
         ok: true,
@@ -85,7 +85,7 @@ function deleteFile(ctx) {
     } = ctx.params;
 
     // remove file
-    Storage.pop(storageName, name);
+    Storage.find(storageName).pop(name);
 
     debug('deleting %s from %s', name, storageName);
 
