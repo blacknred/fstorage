@@ -10,10 +10,6 @@ const crypto = require('crypto');
 const winattr = require('winattr');
 const child = require('child_process');
 
-const gzipper = zlib.createGzip({
-    level: 9,
-});
-
 /** @const {Symbol} name */
 const _NAME = Symbol('name');
 
@@ -42,8 +38,7 @@ const IS_UID_KEY = false;
 const IS_WIN = process.platform.indexOf('win') === 0;
 
 /** @const {String} root_path */
-const ROOT_PATH = Path.join(__dirname, '../', 'static');
-
+const ROOT_PATH = Path.join(__dirname, '../', '../', 'static');
 
 /**
  * Class representing a `fs` based file storage model.
@@ -63,8 +58,12 @@ class FStorage {
      * @param {Opts} opts - The storage options.
      */
     constructor(name, opts = {}) {
+        if (!(this instanceof FStorage)) {
+            return new FStorage(name, opts);
+        }
+
         /** @private @type {String} name */
-        this[_NAME] = name || this.genString(12);
+        this[_NAME] = name || this.genName(12);
 
         const {
             is_gzip = FStorage[_IS_GZIP],
@@ -74,7 +73,7 @@ class FStorage {
 
         /** @private @type {Opts} opts */
         this[_OPTS] = {
-            root_path: root_path || ROOT_PATH,
+            root_path: root_path ? Path.resolve(__dirname, root_path) : ROOT_PATH,
             is_gzip: is_gzip === undefined ? IS_GZIP : is_gzip,
             is_uid_key: is_uid_key === undefined ? IS_UID_KEY : is_uid_key,
         };
@@ -96,7 +95,7 @@ class FStorage {
 
             // create key
             if (this[_OPTS].is_uid_key) {
-                const key = this.genString(4);
+                const key = this.genName(4);
 
                 child.execSync(`useradd ${key}`);
 
@@ -110,7 +109,6 @@ class FStorage {
 
 
     /* GETTERS */
-
     /**
      * @private
      * @returns {string} The storage name.
@@ -168,7 +166,7 @@ class FStorage {
      * @returns {string} path.
      */
     getPath(filename) {
-        if (filename && this[_OPTS].is_gzip) {
+        if (filename && this[_OPTS].is_gzip && Path.extname(filename) !== '.gz') {
             // eslint-disable-next-line
             filename = `${filename}.gz`;
         }
@@ -181,7 +179,7 @@ class FStorage {
      * @returns {string} string.
      */
     // eslint-disable-next-line
-    genString(cnt = 32) {
+    genName(cnt = 32) {
         return crypto.randomBytes(cnt / 2).toString('hex');
     }
 
@@ -198,72 +196,6 @@ class FStorage {
             return `.${filename}`;
         }
         return null;
-    }
-
-
-    /* STATIC */
-
-    /**
-     * Check existance in root.
-     * @static
-     * @param {string[]} args - The path parts.
-     * @return {string|boolean} Result
-     */
-    static exists(...args) {
-        if (args[1] && ((this[_OPTS] && this[_OPTS].is_gzip) || this[_IS_GZIP] || IS_GZIP)) {
-            // eslint-disable-next-line
-            args[1] = `${args[1]}.gz`;
-        }
-        try {
-            const path = args.reduce((a, c) => {
-                if (fs.existsSync(Path.join(a, c))) {
-                    return Path.join(a, c);
-                }
-
-                if (fs.existsSync(Path.join(a, `.${c}`))) {
-                    return Path.join(a, `.${c}`);
-                }
-
-                throw new Error();
-            }, (this[_OPTS] && this[_OPTS].is_gzip) || this[_ROOT_PATH] || ROOT_PATH);
-
-            return Path.basename(path);
-        } catch (e) {
-            return false;
-        }
-    }
-
-    /**
-     * Find a storage.
-     * @static
-     * @param {string} storagename - The storage name.
-     * @return {FStorage} A `FStorage` instance
-     */
-    static find(storagename) {
-        if (!storagename) {
-            throw new Error('Storage not specified');
-        }
-
-        const storage = FStorage.exists(storagename);
-
-        if (!storage) {
-            throw new Error('Storage not found');
-        }
-
-        return new FStorage(storage, {
-            [_EXIST]: true,
-        });
-    }
-
-    /**
-     * Set defaults options for `FStorage`.
-     * @static
-     * @param {Opts} [defaultOpts] - `FStorage` defaults.
-     */
-    static setDefaultOpts(defaultOpts = {}) {
-        FStorage[_IS_GZIP] = defaultOpts.is_gzip;
-        FStorage[_ROOT_PATH] = defaultOpts.root_path;
-        FStorage[_IS_UID_KEY] = defaultOpts.is_uid_key;
     }
 
 
@@ -311,17 +243,6 @@ class FStorage {
         }
     }
 
-    /** Destroy storage. */
-    async destroy() {
-        const path = this.getPath();
-
-        if (this[_OPTS].is_uid_key) {
-            child.execSync(`userdel -r ${this.key}`);
-        }
-
-        await fs.promises.rmdir(path);
-    }
-
     /** List files in storage. */
     async list() {
         const path = this.getPath();
@@ -329,7 +250,7 @@ class FStorage {
         const content = await fs.promises.readdir(path);
 
         return Promise.all(content.map(async (fname) => {
-            const fPath = Path.join(this.getPath(), fname);
+            const fPath = this.getPath(fname);
 
             const stat = await fs.promises.lstat(fPath);
 
@@ -352,36 +273,43 @@ class FStorage {
 
         const content = await fs.promises.readdir(path);
 
-        content.forEach(async (fname) => {
-            const fPath = Path.join(this.getPath(), fname);
+        Promise.all(content.map(async (fname) => {
+            const fPath = this.getPath(fname);
 
-            await fs.promises.unlink(fPath);
-        });
+            return fs.promises.unlink(fPath);
+        }));
+    }
+
+    /** Destroy storage. */
+    async destroy() {
+        await this.clear();
+
+        const path = this.getPath();
+
+        fs.rmdirSync(path);
+
+        if (this[_OPTS].is_uid_key) {
+            child.execSync(`userdel -r ${this.key}`);
+        }
     }
 
 
     /* FILE */
 
     /**
-     * @callback fileCallback
-     * @returns {Buffer} File.
-     */
-    /**
      * Put file in storage.
-     * @param {Buffer|string|fileCallback} [file] - File source.
+     * @param {Buffer|string} [file] - File source.
      * @param {string} [filename] - File name.
      * @returns {string} File path.
      */
-    async put(file, filename) {
+    put(file, filename) {
         if (!file) {
             throw new Error('There is no file');
         }
 
         let reader;
 
-        if (typeof file === 'function') {
-            reader = await file();
-        } else if (typeof file === 'string') {
+        if (typeof file === 'string') {
             reader = fs.createReadStream(file);
         } else if (file instanceof Buffer) {
             reader = new stream.PassThrough();
@@ -390,19 +318,39 @@ class FStorage {
             throw new Error('File have to be Buffer or string path');
         }
 
-        const validFilename = filename || this.genString(32);
+        const validFilename = filename || this.genName(32);
 
         const path = this.getPath(validFilename);
 
         const writer = fs.createWriteStream(path);
 
         if (this[_OPTS].is_gzip) {
-            reader.pipe(gzipper).pipe(writer);
+            reader.pipe(zlib.createGzip()).pipe(writer);
         } else {
             reader.pipe(writer);
         }
 
         return Path.parse(path).name;
+    }
+
+    /**
+     * Put stream in storage.
+     * @param {string} [filename] - File name.
+     */
+    putStream(filename) {
+        const path = this.getPath(filename || this.genName(32));
+
+        if (this[_OPTS].is_gzip) {
+            const through = new stream.PassThrough();
+
+            through.pipe(zlib.createGzip()).pipe(fs.createWriteStream(path, {
+                end: true
+            }));
+
+            return through;
+        }
+
+        return fs.createWriteStream(path);
     }
 
     /**
@@ -467,7 +415,7 @@ class FStorage {
     }
 
     /**
-     * Fide file in storage.
+     * Hide file in storage.
      * @param {string} [filename] - File name.
      */
     async hide(filename) {
@@ -523,6 +471,117 @@ class FStorage {
             winattr.setSync(after, {
                 hidden: false,
             });
+        }
+    }
+
+    /**
+     * Hide file in storage.
+     * @param {string} [filename] - File name.
+     * @param {string} [newFilename] - New file name.
+     */
+    async rename(filename, newFilename) {
+        if (!filename) {
+            throw new Error('There is no file');
+        }
+
+        if (!newFilename) {
+            throw new Error('There is no new name');
+        }
+
+        const file = this.validateFilename(filename);
+
+        if (!file) {
+            throw new Error('There is no such file in storage');
+        }
+
+        const validNewFilename = Path.parse(newFilename).name + Path.extname(file);
+
+        const after = this.getPath(`${file.startsWith('.') ? '.' : ''}${validNewFilename}`);
+
+        try {
+            await fs.promises.rename(this.getPath(file), after);
+
+            if (IS_WIN) {
+                winattr.setSync(after, {
+                    hidden: true,
+                });
+            }
+
+            return validNewFilename;
+        } catch (e) {
+            throw new Error('The name allready in use');
+        }
+    }
+
+
+     /* STATIC */
+
+    /**
+     * Check existance in root.
+     * @static
+     * @param {string[]} args - The path parts.
+     * @return {string|boolean} Result
+     */
+    static exists(...args) {
+        if (args[1] && (
+            (this[_OPTS] && this[_OPTS].is_gzip === 'true')
+            || this[_IS_GZIP] === 'true'
+            || IS_GZIP
+        )) {
+            // eslint-disable-next-line
+            args[1] = `${args[1]}.gz`;
+        }
+        try {
+            const path = args.reduce((a, c) => {
+                if (fs.existsSync(Path.join(a, c))) {
+                    return Path.join(a, c);
+                }
+
+                if (fs.existsSync(Path.join(a, `.${c}`))) {
+                    return Path.join(a, `.${c}`);
+                }
+
+                throw new Error();
+            }, (this[_OPTS] && this[_OPTS].root_path) || this[_ROOT_PATH] || ROOT_PATH);
+
+            return Path.basename(path);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Find a storage.
+     * @static
+     * @param {string} storagename - The storage name.
+     * @return {FStorage} A `FStorage` instance
+     */
+    static find(storagename) {
+        if (!storagename) {
+            throw new Error('Storage not specified');
+        }
+
+        const storage = FStorage.exists(storagename);
+
+        if (!storage) {
+            throw new Error('Storage not found');
+        }
+
+        return new FStorage(storage, {
+            [_EXIST]: true,
+        });
+    }
+
+    /**
+     * Set defaults options for `FStorage`.
+     * @static
+     * @param {Opts} [defaultOpts] - `FStorage` defaults.
+     */
+    static setDefaultOpts(defaultOpts = {}) {
+        FStorage[_IS_GZIP] = defaultOpts.is_gzip;
+        FStorage[_IS_UID_KEY] = defaultOpts.is_uid_key;
+        if (defaultOpts.root_path) {
+            FStorage[_ROOT_PATH] = Path.resolve(__dirname, defaultOpts.root_path);
         }
     }
 }

@@ -9,17 +9,16 @@ function createStorage(ctx) {
     const {
         email,
         tokenDayout,
-        private: isPrivate = false,
         name = ctx.hostname.split('.')[0],
     } = ctx.request.body;
 
     // check storage existence
-    if (Storage.isExist(name)) {
+    if (Storage.exists(name)) {
         ctx.throw(422, `The storage ${name} allready in use`);
     }
 
     // create storage
-    const storage = new Storage(name, isPrivate);
+    const storage = new Storage(name);
 
     // gen token
     const accessToken = encodeToken(name, storage.key, tokenDayout);
@@ -47,21 +46,21 @@ function createNewToken(ctx) {
         email,
         secretKey,
         tokenDayout,
-        name: storageName = ctx.hostname.split('.')[0],
+        name = ctx.hostname.split('.')[0],
     } = ctx.request.body;
 
     // check storage existence
-    if (!Storage.exist(storageName)) {
-        ctx.throw(422, `The storage ${storageName} not in use`);
+    if (!Storage.exists(name)) {
+        ctx.throw(422, `The storage ${name} not in use`);
     }
 
     // check secret key
-    if (!Storage.validKey(storageName, secretKey)) {
+    if (Storage.find(name).key !== parseInt(secretKey, 10)) {
         ctx.throw(403, 'Secret key is not valid');
     }
 
     // gen new token
-    const accessToken = encodeToken(storageName, secretKey, tokenDayout);
+    const accessToken = encodeToken(name, secretKey, tokenDayout);
 
     // send email
     if (email) {
@@ -77,13 +76,9 @@ function createNewToken(ctx) {
     };
 }
 
-function getStorage(ctx) {
-    const {
-        storage: name,
-    } = ctx.params;
-
+async function getStorage(ctx) {
     // get files
-    const data = Storage.find(name).list();
+    const data = await Storage.find(ctx.params.storage).list();
 
     ctx.body = {
         ok: true,
@@ -91,25 +86,25 @@ function getStorage(ctx) {
     };
 }
 
-function updateStorage(ctx) {
+async function updateStorage(ctx) {
     const {
         empty,
         private: isPrivate,
     } = ctx.request.body;
 
-    const {
-        storage: name,
-    } = ctx.params;
-
-    const storage = Storage.find(name);
+    const storage = Storage.find(ctx.params.storage);
 
     // update storage
     if (empty) {
-        storage.clear();
+        await storage.clear();
     }
 
-    if (isPrivate) {
-        storage.private();
+    if (isPrivate === true) {
+        await storage.private();
+    }
+
+    if (isPrivate === false) {
+        await storage.public();
     }
 
     ctx.body = {
@@ -117,13 +112,13 @@ function updateStorage(ctx) {
     };
 }
 
-function deleteStorage(ctx) {
+async function deleteStorage(ctx) {
     const {
         storage: name,
     } = ctx.params;
 
     // delete storage
-    Storage.find(name).destroy();
+    await Storage.find(name).destroy();
 
     debug('deleting storage %s', name);
 

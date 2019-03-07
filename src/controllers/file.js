@@ -1,59 +1,126 @@
-const debug = require('debug')('fstorage');
-
-const File = require('../models/File');
+const fs = require('fs');
+const debug = require('debug')('fstorage:uploading');
+const pipeline = require('util').promisify(require('stream').pipeline);
 
 const Storage = require('../storage');
 
+const {
+    formats,
+    processImage,
+    processVideo,
+    imageMetadata,
+    resizeImage,
+    resizeVideo,
+    resizeVideoRaw,
+    formatToVideoRaw,
+    formatToImage,
+    formatToVideo,
+} = require('../processing');
+
+const BUNCH = false;
+
 async function createFile(ctx) {
-    const opts = {
-        thumb: ctx.query.thumb || true,
-        format: ctx.query.format || true,
-        versions: ctx.query.versions || false,
-    };
-
-    const {
-        storage: storageName
-    } = ctx.params;
-
-    const files = ctx.request.files;
-
-    const data = [];
+    const files = Object.values(ctx.request.files);
 
     // check files presence
-    if (Object.keys(files).length === 0) {
+    if (files.length === 0) {
         ctx.throw(400, 'No files');
     }
-    
-    for (let filedata of files) {
-        // create file
-        const file = new File(filedata, opts);
 
-        // process file
-        file.process();
+    const opts = {
+        width: parseInt(ctx.query.w, 10) || null,
+        height: parseInt(ctx.query.h, 10) || null,
+        format: ctx.query.f,
+        metadata: ctx.query.meta,
+    };
 
-        // save file
-        const paths = file.saveTo(storageName);
+    const storage = Storage.find(ctx.params.storage);
+
+    const links = [];
+
+    // process files
+    // eslint-disable-next-line
+    for (const file of files) {
+        const type = file.type.split('/');
+
+        const transformers = [];
+
+        if (BUNCH) {
+            // metadata
+            if (opts.metadata && type[0] === 'image') {
+                transformers.push(imageMetadata());
+            }
+
+            // resize
+            if (opts.width || opts.height) {
+                if (type[0] === 'image') {
+                    transformers.push(resizeImage(opts.width, opts.height));
+                }
+                if (type[0] === 'video') {
+                    transformers.push(resizeVideoRaw(opts.width, opts.height));
+                }
+            }
+
+            // format
+            if (formats.image.includes(opts.format)) {
+                type[1] = opts.format;
+                transformers.push(formatToImage(opts.format));
+            }
+            if (formats.video.includes(opts.format)) {
+                type[1] = opts.format;
+                transformers.push(formatToVideoRaw(opts.format));
+            }
+        } else {
+            if (type[0] === 'image' && formats.image.includes(opts.format || 'png')) {
+                transformers.push(processImage(file.path, opts));
+            } else if (type[0] === 'video') {
+                if (!opts.format) {
+                    opts.format = type[1];
+                }
+                transformers.push(processVideo(file.path, opts));
+            } else {
+                transformers.push(fs.createReadStream(file.path));
+            }
+
+            if (opts.format) {
+                type[1] = opts.format;
+            }
+        }
+
+
+        const filename = `${storage.genName()}_${file.name}.${type[1]}`;
+
+        try {
+            // eslint-disable-next-line
+            await pipeline(
+                // fs.createReadStream(file.path),
+                ...transformers,
+                storage.putStream(filename),
+            );
+        } catch (e) {
+            ctx.throw(400, e);
+        }
 
         // update response
-        data.push(paths.map(path => `${ctx.protocol}://${ctx.get('host')}/${path}`));
+        links.push(`${ctx.protocol}://${ctx.get('host')}/${storage.name}/${filename}`);
 
-        debug('uploading %i %s to  %s', file.size, file.name, storageName);
+        debug('%ib %s to %s', file.size, filename, storage.name);
     }
 
     ctx.body = {
         ok: true,
-        data,
+        data: links,
     };
 }
 
-function getFile(ctx) {
+async function getFile(ctx) {
     const {
         file: name,
         storage: storageName,
     } = ctx.params;
 
     // get stat
-    const data = Storage.find(storageName).stat(name);
+    const data = await Storage.find(storageName).stat(name);
 
     ctx.body = {
         ok: true,
@@ -61,31 +128,50 @@ function getFile(ctx) {
     };
 }
 
-function updateFile(ctx) {
-    const opts = {
-        private: ctx.request.body.private,
-    };
+async function updateFile(ctx) {
+    const {
+        name: newName,
+        private: isPrivate,
+    } = ctx.request.body;
 
     const {
-        storage: name,
+        file: name,
+        storage: storageName,
     } = ctx.params;
 
+    const storage = Storage.find(storageName);
+
+    let data;
+
     // update storage
-    Storage.update(name, opts);
+    if (isPrivate === true) {
+        await storage.hide(name);
+    }
+
+    if (isPrivate === false) {
+        await storage.unhide(name);
+    }
+
+    if (newName) {
+        data = await storage.rename(name, newName);
+    }
 
     ctx.body = {
         ok: true,
+        ...(data && {
+            data
+        }),
     };
 }
 
-function deleteFile(ctx) {
+async function deleteFile(ctx) {
     const {
         file: name,
         storage: storageName,
     } = ctx.params;
 
     // remove file
-    Storage.find(storageName).pop(name);
+    await Storage.find(storageName).pop(name);
 
     debug('deleting %s from %s', name, storageName);
 

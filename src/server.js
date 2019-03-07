@@ -1,6 +1,9 @@
 const http = require('http');
 const debug = require('debug')('fstorage:server');
 
+const {
+    fileStdout,
+} = require('./helpers');
 const app = require('./app');
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
@@ -17,9 +20,14 @@ const port = normalizePort(process.env.PORT || 3000);
 function onError(error) {
     if (error.syscall !== 'listen') throw error;
     switch (error.code) {
-        case 'EACCES': process.exit(1); break;
-        case 'EADDRINUSE': process.exit(1); break;
-        default: throw error;
+        case 'EACCES':
+            process.exit(1);
+            break;
+        case 'EADDRINUSE':
+            process.exit(1);
+            break;
+        default:
+            throw error;
     }
 }
 
@@ -30,6 +38,13 @@ function onListening() {
     const bind = typeof addr === 'string' ? `pipe ${port}` : `port ${port}`;
     debug(`🚀  on ${bind}`);
 }
+
+process.on('uncaughtException', (err) => {
+    debug('uncaughtException: ', err.message);
+    debug(err.stack);
+    fileStdout(err.message, 'uncaughtException');
+    // process.exit(1);
+});
 
 server.listen(port);
 server.on('error', onError);

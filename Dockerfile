@@ -1,9 +1,10 @@
-FROM node:latest
+FROM nampdn/node-ffmpeg:latest
 
-# Install ffmpeg
-RUN echo "deb http://ftp.uk.debian.org/debian jessie-backports main" >> /etc/apt/sources.list && \
-    apt-get update && \
-    apt-get -y install ffmpeg
+# # node:latest
+# # Install ffmpeg
+# RUN echo "deb http://ftp.uk.debian.org/debian jessie-backports main" >> /etc/apt/sources.list && \
+#     apt-get update && \
+#     apt-get -y install ffmpeg
 
 # set working directory
 RUN mkdir -p /usr/src/app

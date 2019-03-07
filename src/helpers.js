@@ -1,6 +1,3 @@
-const {
-    execSync,
-} = require('child_process');
 const fs = require('fs');
 const Path = require('path');
 const debug = require('debug')('fstorage');
@@ -22,10 +19,10 @@ const logFile = fs.createWriteStream(ERROR_LOGS_PATH, {
 //     }
 // }
 
-function fileStdout(str) {
+function fileStdout(str, pre = '') {
     debug(str);
 
-    logFile.write(`${str} \n`);
+    logFile.write(`${new Date()}: ${pre.toUpperCase()} ${str} \n`);
 }
 
 module.exports = {

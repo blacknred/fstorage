@@ -1,6 +1,3 @@
-const {
-    RateLimit,
-} = require('koa2-ratelimit');
 const Koa = require('koa');
 const Path = require('path');
 const cors = require('kcors');
@@ -10,6 +7,7 @@ const serve = require('koa-static');
 const helmet = require('koa-helmet');
 const logger = require('koa-logger');
 const Router = require('koa-router');
+const limiter = require('koa2-ratelimit');
 
 const {
     fileStdout,
@@ -23,13 +21,16 @@ const STATIC_PATH = Path.join(__dirname, '../', 'files');
 const OPTS = {
     body: {
         multipart: true,
+        formidable: {
+            maxFileSize: 100 * 1024 * 1024,
+        },
     },
     static: {
         maxage: process.env.MAX_AGE || 300000,
-        gzip: process.env.COMPRESSION || true,
+        gzip: process.env.COMPRESSION ? process.env.COMPRESSION : true,
         // defer: true,
         extensions: true,
-        setHeaders: res => res.setHeader('Content-Disposition', 'attachment'),
+        // setHeaders: res => res.setHeader('Content-Disposition', 'attachment'),
     },
     ratelimit: {
         interval: 15 * 60 * 1000,
@@ -52,7 +53,7 @@ const app = new Koa();
 files.use(serve(STATIC_PATH, OPTS.static));
 
 /* Ratelimit */
-api.use(RateLimit.middleware(OPTS.ratelimit));
+api.use(limiter.RateLimit.middleware(OPTS.ratelimit));
 
 /* Bodyparser */
 api.use(body(OPTS.body));

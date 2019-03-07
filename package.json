@@ -9,7 +9,8 @@
         "start": "WORKER_COUNT=2 DEBUG=fstorage:* PORT=5000 nodemon src",
         "serve": "koa-cluster src/app",
         "lint": "eslint src",
-        "test": "jest"
+        "test": "jest",
+        "test:integration": "jest --forceExit --detectOpenHandles tests/integration"
     },
     "dependencies": {
         "debug": "^3.2.6",
@@ -27,15 +28,15 @@
         "koa-static": "^5.0.0",
         "koa2-ratelimit": "^0.8.0",
         "moment": "^2.24.0",
-        "sharp": "^0.20.8",
+        "sharp": "^0.21.3",
         "winattr": "^2.0.0"
     },
     "devDependencies": {
-        "axios": "^0.18.0",
         "eslint": "^5.13.0",
         "eslint-config-airbnb-base": "^11.1.3",
         "eslint-plugin-import": "^2.14.0",
         "jest": "^24.1.0",
-        "nodemon": "^1.18.10"
+        "nodemon": "^1.18.10",
+        "request-promise": "^4.2.4"
     }
 }
