@@ -4,7 +4,7 @@ const debug = require('debug')('fstorage:server');
 const {
     fileStdout,
 } = require('./helpers');
-const app = require('./app');
+const app = require('./apps');
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 

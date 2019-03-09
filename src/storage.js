@@ -1,7 +1,8 @@
-const Storage = require('./models/FStorage');
+const config = require('../config');
+const Storage = require('./models/storage');
 
 Storage.setDefaultOpts({
-    root_path: '../../../files',
+    root_path: config.static_path,
     is_gzip: false,
     is_uid_key: false,
 });

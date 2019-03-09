@@ -2,13 +2,9 @@ const cpus = require('os').cpus();
 const cluster = require('cluster');
 const debug = require('debug')('fstorage:clusters');
 
-/* Clustering to exploit all the cores of a machine.
-    Node is single-threaded by default */
-
 const workerCount = process.env.WORKER_COUNT || cpus;
 
 if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
-    // Master process
     workerCount.forEach(() => cluster.fork());
 
     debug('Master process online with PID %s', process.pid);
@@ -24,7 +20,6 @@ if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
         cluster.fork();
     });
 } else {
-    // Worker process
     // eslint-disable-next-line
     require('./server'); 
 }

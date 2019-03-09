@@ -204,7 +204,20 @@ function processVideo(input, opts) {
     return ffmpegThrough;
 }
 
+
+
+function isProcessable(ctx, next) {
+    return (['image', 'video', 'music'].includes(file.type.split('/')[0])
+    || [formats].includes(output))
+    && Object(ctx.query).keys().length;
+}
+
+
 module.exports = {
+    isProcessable,
+
+
+
     imageMetadata,
     resizeImage,
     formatToImage,

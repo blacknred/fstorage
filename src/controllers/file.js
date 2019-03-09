@@ -75,7 +75,7 @@ async function createFile(ctx) {
                 transformers.push(processImage(file.path, opts));
             } else if (type[0] === 'video') {
                 if (!opts.format) {
-                    opts.format = type[1];
+                    opts.format = type[1];  ``
                 }
                 transformers.push(processVideo(file.path, opts));
             } else {

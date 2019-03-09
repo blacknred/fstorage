@@ -154,7 +154,7 @@ describe('FStorage api', () => {
             //         'x-access-token': TEST_DATA.accessToken,
             //     },
             // }),
-            request(`${TEST_DATA.storageName}?h=20&f=webm`, {
+            request(`${TEST_DATA.storageName}?f=webm`, {
                 method: 'post',
                 formData: {
                     file: {
