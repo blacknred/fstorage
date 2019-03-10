@@ -1,23 +1,13 @@
 const fs = require('fs');
+const Path = require('path');
 const debug = require('debug')('fstorage:uploading');
 const pipeline = require('util').promisify(require('stream').pipeline);
 
-const Storage = require('../storage');
-
 const {
-    formats,
-    processImage,
-    processVideo,
-    imageMetadata,
-    resizeImage,
-    resizeVideo,
-    resizeVideoRaw,
-    formatToVideoRaw,
-    formatToImage,
-    formatToVideo,
-} = require('../processing');
-
-const BUNCH = false;
+    processor,
+    PROCESSABLE_EXT,
+} = require('../models/processor');
+const Storage = require('../storage');
 
 async function createFile(ctx) {
     const files = Object.values(ctx.request.files);
@@ -27,85 +17,35 @@ async function createFile(ctx) {
         ctx.throw(400, 'No files');
     }
 
-    const opts = {
-        width: parseInt(ctx.query.w, 10) || null,
-        height: parseInt(ctx.query.h, 10) || null,
-        format: ctx.query.f,
-        metadata: ctx.query.meta,
-    };
-
     const storage = Storage.find(ctx.params.storage);
 
-    const links = [];
-
-    // process files
-    // eslint-disable-next-line
-    for (const file of files) {
+    // storage processing
+    const operations = files.map(async (file) => {
         const type = file.type.split('/');
 
-        const transformers = [];
+        const ext = type[1] || Path.extname(file.name).slice(1);
 
-        if (BUNCH) {
-            // metadata
-            if (opts.metadata && type[0] === 'image') {
-                transformers.push(imageMetadata());
-            }
-
-            // resize
-            if (opts.width || opts.height) {
-                if (type[0] === 'image') {
-                    transformers.push(resizeImage(opts.width, opts.height));
-                }
-                if (type[0] === 'video') {
-                    transformers.push(resizeVideoRaw(opts.width, opts.height));
-                }
-            }
-
-            // format
-            if (formats.image.includes(opts.format)) {
-                type[1] = opts.format;
-                transformers.push(formatToImage(opts.format));
-            }
-            if (formats.video.includes(opts.format)) {
-                type[1] = opts.format;
-                transformers.push(formatToVideoRaw(opts.format));
-            }
-        } else {
-            if (type[0] === 'image' && formats.image.includes(opts.format || 'png')) {
-                transformers.push(processImage(file.path, opts));
-            } else if (type[0] === 'video') {
-                if (!opts.format) {
-                    opts.format = type[1];  ``
-                }
-                transformers.push(processVideo(file.path, opts));
-            } else {
-                transformers.push(fs.createReadStream(file.path));
-            }
-
-            if (opts.format) {
-                type[1] = opts.format;
-            }
-        }
-
+        const isProcess = Object.keys(ctx.query).length && PROCESSABLE_EXT.includes(ext);
 
         const filename = `${storage.genName()}_${file.name}.${type[1]}`;
 
         try {
-            // eslint-disable-next-line
             await pipeline(
-                // fs.createReadStream(file.path),
-                ...transformers,
+                isProcess ? process(file.path, ctx.query) : fs.createReadStream(file.path),
                 storage.putStream(filename),
             );
         } catch (e) {
             ctx.throw(400, e);
         }
 
-        // update response
-        links.push(`${ctx.protocol}://${ctx.get('host')}/${storage.name}/${filename}`);
+        processor[type[0]].pipe(storage.putStream(filename));
 
         debug('%ib %s to %s', file.size, filename, storage.name);
-    }
+
+        return `${ctx.protocol}://${ctx.get('host')}/${storage.name}/${filename}`;
+    });
+
+    const links = await Promise.all(operations);
 
     ctx.body = {
         ok: true,

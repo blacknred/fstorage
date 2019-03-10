@@ -16,11 +16,11 @@ const OPTS = {
         },
     },
     ratelimit: {
-        interval: config.max_requests_interval,
-        max: config.max_requests_per_interval,
+        interval: config.rate_limit_interval,
+        max: config.rate_limit_max_requests,
         delayAfter: 10,
         timeWait: 3 * 1000,
-        // skip: () => {},
+        // skip: () => {}, check api plan token
         message: 'Too many requests, please try again after',
     },
 };
@@ -40,15 +40,19 @@ app.use(logger());
 app.use(async (ctx, next) => {
     try {
         await next();
+
         const status = ctx.status || 404;
+
         if (status === 404) {
             ctx.throw(404, 'Not Found');
         }
     } catch (err) {
         ctx.status = err.status || 500;
+
         if (config.is_dev && ctx.status === 500) {
             helpers.fileStdout(err.message);
         }
+
         ctx.body = {
             status: 'error',
             message: err.message

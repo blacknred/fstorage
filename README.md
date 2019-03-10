@@ -2,7 +2,13 @@
 
  * Processing (image/video).
  * Compressing.
- * Serving files /:storage/:filename
+ * File serving /:storage/:filename
+ 
+ 1. Create a repository. Credentials on the client side (token + secret).
+ 2. Use the token to access the repository and process related files.
+ 3. Use the secret to restore access to the repository.
+ 4. Process files on the fly.
+ 5. File serving.
 
 ### Tech
 
