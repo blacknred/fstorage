@@ -6,13 +6,13 @@ const serve = require('koa-static');
 const {
     processor,
     PROCESSABLE_EXT,
-} = require('./models/processor');
-const config = require('../config');
+} = require('../processor');
+const config = require('../../config');
 
 const OPTS = {
     maxage: config.max_age,
     gzip: config.is_gzip,
-    defer: true,
+    defer: config.is_on_fly_process,
     extensions: true,
     // setHeaders: res => res.setHeader('Content-Disposition', 'attachment'),
 };

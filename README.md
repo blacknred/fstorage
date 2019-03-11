@@ -1,6 +1,6 @@
 # FStorage - File server
 
- * Processing (image/video).
+ * Processing (image/video) for web.
  * Compressing.
  * File serving /:storage/:filename
  
@@ -28,7 +28,11 @@
 | /:storage       | DELETE      | DELETE      | Delete storage with files           |
 | /:storage/:file | DELETE      | DELETE      | Delete file from storage            |
 
-processing query: `?w=200&h=300&f=webp&meta=true&thumb=100`
+processing:
+* `&w=200&h=300`
+* `&f=webp`
+* `&meta=true`
+* `&thumb=100`
 
 ### Run the project
 

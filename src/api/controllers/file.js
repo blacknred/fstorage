@@ -6,7 +6,7 @@ const pipeline = require('util').promisify(require('stream').pipeline);
 const {
     processor,
     PROCESSABLE_EXT,
-} = require('../models/processor');
+} = require('../../processor');
 const Storage = require('../storage');
 
 async function createFile(ctx) {
@@ -31,7 +31,7 @@ async function createFile(ctx) {
 
         try {
             await pipeline(
-                isProcess ? process(file.path, ctx.query) : fs.createReadStream(file.path),
+                isProcess ? process(file.path, ctx.query, ext) : fs.createReadStream(file.path),
                 storage.putStream(filename),
             );
         } catch (e) {
@@ -69,6 +69,7 @@ async function getFile(ctx) {
 }
 
 async function updateFile(ctx) {
+    // TODO: ?processing
     const {
         name: newName,
         private: isPrivate,
