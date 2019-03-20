@@ -10,6 +10,8 @@
  4. Process files on the fly.
  5. File serving.
 
+ s3, facedetection
+
 ### Tech
 
  * Ffmpeg, Node, Koa, Sharp

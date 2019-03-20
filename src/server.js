@@ -43,7 +43,7 @@ process.on('uncaughtException', (err) => {
     debug('uncaughtException: ', err.message);
     debug(err.stack);
     fileStdout(err.message, 'uncaughtException');
-    // process.exit(1);
+    process.exit(1);
 });
 
 server.listen(port);

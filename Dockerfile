@@ -17,6 +17,7 @@ ENV TOKEN_SECRET \x02\xf3\xf7r\t\x9f\xee\xbbu\xb1\xe1\x90\xfe
 
 # install and cache app dependencies
 ADD package.json /usr/src/package.json
+RUN yarn remove sharp && yarn add sharp
 RUN yarn install
 #RUN npm install --unsafe-perm=true
 
