@@ -28,9 +28,9 @@ app.use(serve(config.static_path, OPTS));
 app.use(async (ctx, next) => {
     const urlParts = url.parse(ctx.originalUrl, true);
 
-    if (urlParts.query.download) {
+    if (urlParts.query.d || urlParts.query.download) {
         ctx.attachment(urlParts.pathname);
-        delete urlParts.query.download;
+        delete (urlParts.query.d || urlParts.query.download);
     }
 
     if (Object.keys(urlParts.query).length) {
