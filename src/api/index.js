@@ -50,7 +50,7 @@ app.use(async (ctx, next) => {
         ctx.status = err.status || 500;
 
         if (config.is_dev && ctx.status === 500) {
-            helpers.fileStdout(err.message);
+            helpers.fileStderr(err.message);
         }
 
         ctx.body = {
@@ -68,7 +68,5 @@ routes.forEach(route => router[route.method](route.path, route.action));
 app.use(router.routes());
 
 app.use(router.allowedMethods());
-
-// TODO: ?S3 credentials in ctx.state
 
 module.exports = app;

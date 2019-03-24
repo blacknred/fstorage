@@ -1,12 +1,6 @@
 const fs = require('fs');
-const Path = require('path');
 const debug = require('debug')('fstorage:uploading');
-const pipeline = require('util').promisify(require('stream').pipeline);
 
-const {
-    processor,
-    PROCESSABLE_EXT,
-} = require('../../processor');
 const Storage = require('../storage');
 
 async function createFile(ctx) {
@@ -23,22 +17,11 @@ async function createFile(ctx) {
     const operations = files.map(async (file) => {
         const type = file.type.split('/');
 
-        const ext = type[1] || Path.extname(file.name).slice(1);
-
-        const isProcess = Object.keys(ctx.query).length && PROCESSABLE_EXT.includes(ext);
+        // const ext = type[1] || Path.extname(file.name).slice(1);
 
         const filename = `${storage.genName()}_${file.name}.${type[1]}`;
 
-        try {
-            await pipeline(
-                isProcess ? process(file.path, ctx.query, ext) : fs.createReadStream(file.path),
-                storage.putStream(filename),
-            );
-        } catch (e) {
-            ctx.throw(400, e);
-        }
-
-        processor[type[0]].pipe(storage.putStream(filename));
+        fs.createReadStream(file.path).pipe(storage.putStream(filename));
 
         debug('%ib %s to %s', file.size, filename, storage.name);
 

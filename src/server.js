@@ -2,11 +2,9 @@ const http = require('http');
 const debug = require('debug')('fstorage:server');
 
 const {
-    fileStdout,
+    fileStderr,
 } = require('./helpers');
 const app = require('./app');
-
-process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 
 function normalizePort(val) {
     const port = parseInt(val, 10);
@@ -42,7 +40,7 @@ function onListening() {
 process.on('uncaughtException', (err) => {
     debug('uncaughtException: ', err.message);
     debug(err.stack);
-    fileStdout(err.message, 'uncaughtException');
+    fileStderr(err.message, 'uncaughtException');
     process.exit(1);
 });
 
