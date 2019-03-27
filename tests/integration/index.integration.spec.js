@@ -1,4 +1,3 @@
-const stream = require('stream');
 const request = require('request');
 const promisify = require('util').promisify;
 
@@ -15,10 +14,6 @@ const TEST_DATA = {
     fileName: null,
     newFileName: 'zizoo.jpg',
 };
-const through = new stream.PassThrough();
-through.push(TEST_DATA.file); // Buffer.from('data:image/jpeg;base64', 'binary')
-through.push(null);
-// through.end();
 
 /*
 create storage
@@ -35,7 +30,7 @@ delete storage
 const fetch = promisify(request.defaults({
     baseUrl: TEST_DATA.serverUrl,
     json: true,
-    timeout: 20000,
+    timeout: 10000,
 }));
 
 describe('FStorage api', () => {
@@ -119,7 +114,7 @@ describe('FStorage api', () => {
                     'x-access-token': TEST_DATA.accessToken,
                 },
             }),
-            fetch.post({
+            fetch({
                 uri: `${TEST_DATA.storageName}`,
                 method: 'POST',
                 formData: {
@@ -135,34 +130,29 @@ describe('FStorage api', () => {
                     'x-access-token': TEST_DATA.accessToken,
                 },
             }),
+            new Promise((resolve) => {
+                request.post(`${TEST_DATA.serverUrl}/${TEST_DATA.storageName}`, {
+                    formData: {
+                        file: {
+                            value: request.get(TEST_DATA.streamFile),
+                            options: {
+                                filename: 'topsecret.avi',
+                            }
+                        }
+                    },
+                    headers: {
+                        'x-access-token': TEST_DATA.accessToken,
+                    },
+                })
+                .on('response', resolve);
+            })
         ]);
 
         expect(data[0].body).toMatchObject({
             ok: true,
             data: data[0].body.data,
         });
-    }, 20000);
-
-    test('streaming file to storage', () => {
-        request.post(`${TEST_DATA.serverUrl}/${TEST_DATA.storageName}`, {
-            formData: {
-                file: {
-                    value: request.get(TEST_DATA.streamFile),
-                    options: {
-                        filename: 'topsecret.avi',
-                    }
-                }
-            },
-            headers: {
-                'x-access-token': TEST_DATA.accessToken,
-            },
-        })
-        .on('response', (m) => {
-            console.log('dooone', Object.keys(m));
-            expect({}).toMatchObject({});
-            // done();
-        });
-    }, 50000);
+    },);
 
     test('get storage', async () => {
         const data = await fetch({
@@ -174,6 +164,7 @@ describe('FStorage api', () => {
         });
 
         TEST_DATA.fileName = data.body.data[0].name;
+
         expect(data.body).toMatchObject({
             ok: true,
             data: data.body.data
@@ -213,19 +204,19 @@ describe('FStorage api', () => {
         });
     });
 
-    // test('delete file', async () => {
-    //     const data = await fetch({
-    //         uri: `/${TEST_DATA.storageName}/${TEST_DATA.fileName}`,
-    //         method: 'delete',
-    //         headers: {
-    //             'x-access-token': TEST_DATA.accessToken,
-    //         },
-    //     });
+    test('delete file', async () => {
+        const data = await fetch({
+            uri: `/${TEST_DATA.storageName}/${TEST_DATA.fileName}`,
+            method: 'delete',
+            headers: {
+                'x-access-token': TEST_DATA.accessToken,
+            },
+        });
 
-    //     expect(data.body).toMatchObject({
-    //         ok: true,
-    //     });
-    // });
+        expect(data.body).toMatchObject({
+            ok: true,
+        });
+    });
 
     // test('delete storage', async () => {
     //     const data = await fetch({
