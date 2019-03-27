@@ -1,32 +1,24 @@
-const sharp = require('sharp');
-const fs = require('fs');
-const requestP = require('request-promise');
+const stream = require('stream');
+const request = require('request');
+const promisify = require('util').promisify;
 
+//  --forceExit --detectOpenHandles
 const TEST_DATA = {
-    serverUrl: 'http://localhost:5000/api/v1',
+    serverUrl: 'http://localhost:5001/api/v1',
     storageName: 'test',
     email: 'test@test.com',
     tokenDayout: 1,
     secretKey: null,
     accessToken: null,
-    imagefile: sharp({
-        create: {
-            width: 300,
-            height: 400,
-            channels: 4,
-            background: {
-                r: 255,
-                g: 0,
-                b: 0,
-                alpha: 0.5,
-            }
-        }
-    }).jpeg().toBuffer(),
-    videoFile: 'http://file-examples.com/wp-content/uploads/2018/04/file_example_AVI_480_750kB.avi',
-    documentFile: 'http://file-examples.com/wp-content/uploads/2017/10/file-sample_150kB.pdf',
+    file: Buffer.alloc(5000000),
+    streamFile: 'https://nodejs.org/static/images/logo.svg',
     fileName: null,
     newFileName: 'zizoo.jpg',
 };
+const through = new stream.PassThrough();
+through.push(TEST_DATA.file); // Buffer.from('data:image/jpeg;base64', 'binary')
+through.push(null);
+// through.end();
 
 /*
 create storage
@@ -40,16 +32,17 @@ delete file
 delete storage
 */
 
-const request = requestP.defaults({
+const fetch = promisify(request.defaults({
     baseUrl: TEST_DATA.serverUrl,
     json: true,
     timeout: 20000,
-});
+}));
 
 describe('FStorage api', () => {
     test('create storage', async () => {
-        const data = await request('/new', {
-            method: 'post',
+        const data = await fetch({
+            uri: '/new',
+            method: 'POST',
             form: {
                 name: TEST_DATA.storageName,
                 email: TEST_DATA.email,
@@ -57,9 +50,9 @@ describe('FStorage api', () => {
             },
         });
 
-        TEST_DATA.secretKey = data.data.secretKey;
-        TEST_DATA.accessToken = data.data.accessToken;
-        expect(data).toMatchObject({
+        TEST_DATA.secretKey = data.body.data.secretKey;
+        TEST_DATA.accessToken = data.body.data.accessToken;
+        expect(data.body).toMatchObject({
             ok: true,
             data: {
                 secretKey: TEST_DATA.secretKey,
@@ -69,54 +62,56 @@ describe('FStorage api', () => {
         });
     });
 
-    // test('restore access', async () => {
-    //     const data = await request('/token', {
-    //         method: 'post',
-    //         form: {
-    //             name: TEST_DATA.storageName,
-    //             email: TEST_DATA.email,
-    //             tokenDayout: TEST_DATA.tokenDayout,
-    //             secretKey: TEST_DATA.secretKey,
-    //         },
-    //     });
+    test('restore access', async () => {
+        const data = await fetch({
+            uri: '/token',
+            method: 'POST',
+            form: {
+                name: TEST_DATA.storageName,
+                email: TEST_DATA.email,
+                tokenDayout: TEST_DATA.tokenDayout,
+                secretKey: TEST_DATA.secretKey,
+            },
+        });
 
-    //     TEST_DATA.accessToken = data.data.accessToken;
-    //     expect(data).toMatchObject({
-    //         ok: true,
-    //         data: {
-    //             accessToken: TEST_DATA.accessToken,
-    //         },
-    //     });
-    // });
+        TEST_DATA.accessToken = data.body.data.accessToken;
+        expect(data.body).toMatchObject({
+            ok: true,
+            data: {
+                accessToken: TEST_DATA.accessToken,
+            },
+        });
+    });
 
-    // test('update storage', async () => {
-    //     const data = await request(`/${TEST_DATA.storageName}`, {
-    //         method: 'put',
-    //         form: {
-    //             empty: true,
-    //             private: true,
-    //         },
-    //         headers: {
-    //             'x-access-token': TEST_DATA.accessToken,
-    //         },
-    //     });
+    test('update storage', async () => {
+        const data = await fetch({
+            uri: `/${TEST_DATA.storageName}`,
+            method: 'PUT',
+            form: {
+                empty: true,
+                private: true,
+            },
+            headers: {
+                'x-access-token': TEST_DATA.accessToken,
+            },
+        });
 
-    //     expect(data).toMatchObject({
-    //         ok: true,
-    //     });
-    // });
+        expect(data.body).toMatchObject({
+            ok: true,
+        });
+    });
 
     test('add files', async () => {
-        const value = await TEST_DATA.imagefile;
         const data = await Promise.all([
-            request(`${TEST_DATA.storageName}?f=tiff&w=100`, {
-                method: 'post',
+            fetch({
+                uri: `${TEST_DATA.storageName}`,
+                method: 'POST',
                 formData: {
                     file: {
-                        value,
+                        value: TEST_DATA.file,
                         options: {
                             filename: 'test1_img',
-                            contentType: 'image/jpg'
+                            contentType: 'image/jpeg'
                         },
                     },
                 },
@@ -124,45 +119,16 @@ describe('FStorage api', () => {
                     'x-access-token': TEST_DATA.accessToken,
                 },
             }),
-            request(`${TEST_DATA.storageName}?f=webp&w=20&h=70`, {
-                method: 'post',
+            fetch.post({
+                uri: `${TEST_DATA.storageName}`,
+                method: 'POST',
                 formData: {
                     file: {
-                        value,
-                        options: {
-                            filename: 'test_img',
-                            contentType: 'image/jpg'
-                        },
-                    },
-                },
-                headers: {
-                    'x-access-token': TEST_DATA.accessToken,
-                },
-            }),
-            // request(`${TEST_DATA.storageName}?`, {
-            //     method: 'post',
-            //     formData: {
-            //         file: {
-            //             value: await requestP.get(TEST_DATA.documentFile),
-            //             options: {
-            //                 filename: 'test_pdf',
-            //                 contentType: 'application/pdf'
-            //             },
-            //         },
-            //     },
-            //     headers: {
-            //         'x-access-token': TEST_DATA.accessToken,
-            //     },
-            // }),
-            request(`${TEST_DATA.storageName}?f=webm`, {
-                method: 'post',
-                formData: {
-                    file: {
-                        value: fs.createReadStream(__dirname + '/1.avi'),
+                        value: TEST_DATA.file,
                         options: {
                             filename: 'test_video',
-                            contentType: 'video/avi'
-                        }
+                            contentType: 'video/mp4'
+                        },
                     },
                 },
                 headers: {
@@ -171,81 +137,106 @@ describe('FStorage api', () => {
             }),
         ]);
 
-        console.log(data);
-        expect(data[0]).toMatchObject({
+        expect(data[0].body).toMatchObject({
             ok: true,
-            data: data[0].data,
+            data: data[0].body.data,
+        });
+    }, 20000);
+
+    test('streaming file to storage', () => {
+        request.post(`${TEST_DATA.serverUrl}/${TEST_DATA.storageName}`, {
+            formData: {
+                file: {
+                    value: request.get(TEST_DATA.streamFile),
+                    options: {
+                        filename: 'topsecret.avi',
+                    }
+                }
+            },
+            headers: {
+                'x-access-token': TEST_DATA.accessToken,
+            },
+        })
+        .on('response', (m) => {
+            console.log('dooone', Object.keys(m));
+            expect({}).toMatchObject({});
+            // done();
         });
     }, 50000);
 
-    // test('get storage', async () => {
-    //     const data = await request(`/${TEST_DATA.storageName}`, {
-    //         method: 'get',
-    //         headers: {
-    //             'x-access-token': TEST_DATA.accessToken,
-    //         },
-    //     });
+    test('get storage', async () => {
+        const data = await fetch({
+            method: 'get',
+            uri: `/${TEST_DATA.storageName}`,
+            headers: {
+                'x-access-token': TEST_DATA.accessToken,
+            },
+        });
 
-    //     TEST_DATA.fileName = data.data[0].name;
-    //     expect(data).toMatchObject({
-    //         ok: true,
-    //         data: data.data
-    //     });
-    // });
+        TEST_DATA.fileName = data.body.data[0].name;
+        expect(data.body).toMatchObject({
+            ok: true,
+            data: data.body.data
+        });
+    });
 
-    // test('get file', async () => {
-    //     const data = await request(`/${TEST_DATA.storageName}/${TEST_DATA.fileName}`, {
-    //         method: 'get',
-    //         headers: {
-    //             'x-access-token': TEST_DATA.accessToken,
-    //         },
-    //     });
+    test('get file', async () => {
+        const data = await fetch({
+            uri: `/${TEST_DATA.storageName}/${TEST_DATA.fileName}`,
+            method: 'get',
+            headers: {
+                'x-access-token': TEST_DATA.accessToken,
+            },
+        });
 
-    //     expect(data).toMatchObject({
-    //         ok: true,
-    //     });
-    // });
+        expect(data.body).toMatchObject({
+            ok: true,
+        });
+    });
 
-    // test('update file', async () => {
-    //     const data = await request(`/${TEST_DATA.storageName}/${TEST_DATA.fileName}`, {
-    //         method: 'put',
-    //         form: {
-    //             name: TEST_DATA.newFileName,
-    //             private: true,
-    //         },
-    //         headers: {
-    //             'x-access-token': TEST_DATA.accessToken,
-    //         },
-    //     });
+    test('update file', async () => {
+        const data = await fetch({
+            uri: `/${TEST_DATA.storageName}/${TEST_DATA.fileName}`,
+            method: 'put',
+            form: {
+                name: TEST_DATA.newFileName,
+                private: true,
+            },
+            headers: {
+                'x-access-token': TEST_DATA.accessToken,
+            },
+        });
 
-    //     TEST_DATA.fileName = data.data;
-    //     expect(data).toMatchObject({
-    //         ok: true,
-    //     });
-    // });
+        TEST_DATA.fileName = data.body.data;
+        expect(data.body).toMatchObject({
+            ok: true,
+        });
+    });
 
     // test('delete file', async () => {
-    //     const data = await request(`/${TEST_DATA.storageName}/${TEST_DATA.fileName}`, {
+    //     const data = await fetch({
+    //         uri: `/${TEST_DATA.storageName}/${TEST_DATA.fileName}`,
     //         method: 'delete',
     //         headers: {
     //             'x-access-token': TEST_DATA.accessToken,
     //         },
     //     });
 
-    //     expect(data).toMatchObject({
+    //     expect(data.body).toMatchObject({
     //         ok: true,
     //     });
     // });
 
-    // test('delete', async () => {
-    //     const data = await request(`/${TEST_DATA.storageName}`, {
+    // test('delete storage', async () => {
+    //     const data = await fetch({
+    //         uri: `/${TEST_DATA.storageName}`,
     //         method: 'delete',
     //         headers: {
     //             'x-access-token': TEST_DATA.accessToken,
     //         },
     //     });
 
-    //     expect(data).toMatchObject({
+    //     expect(data.body).toMatchObject({
     //         ok: true,
     //     });
     // });

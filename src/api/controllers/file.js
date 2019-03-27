@@ -4,6 +4,19 @@ const debug = require('debug')('fstorage:uploading');
 const Storage = require('../storage');
 
 async function createFile(ctx) {
+    // ctx.req.pipe(storage.putStream('filename.jpg'));
+    //     // .on('data', (chunk) => {
+    //     //     str += chunk;
+    //     //     console.log(str.length);
+    //     // });
+    //     // .on('error', console.log)
+    //     ctx.req.on('end', (res) => {
+    //         console.log(res);
+    //     });
+    // ctx.body = {};
+
+    // TODO: upload streams without formData
+
     const files = Object.values(ctx.request.files);
 
     // check files presence
@@ -23,7 +36,7 @@ async function createFile(ctx) {
 
         fs.createReadStream(file.path).pipe(storage.putStream(filename));
 
-        debug('%ib %s to %s', file.size, filename, storage.name);
+        debug('%ib %s => %s', file.size, filename, storage.name);
 
         return `${ctx.protocol}://${ctx.get('host')}/${storage.name}/${filename}`;
     });
@@ -97,7 +110,7 @@ async function deleteFile(ctx) {
     // remove file
     await Storage.find(storageName).pop(name);
 
-    debug('deleting %s from %s', name, storageName);
+    debug('deleting %s <= %s', name, storageName);
 
     ctx.body = {
         ok: true,

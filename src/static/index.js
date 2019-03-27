@@ -19,10 +19,9 @@ app.use(serve(config.static_path, OPTS));
 
 /*  */
 app.use(async (ctx, next) => {
-    const urlParts = url.parse(ctx.originalUrl, true);
-
-    if (urlParts.query.d || urlParts.query.download) {
-        ctx.attachment(urlParts.pathname);
+    // download prevents output stream closing
+    if (ctx.query.dl || ctx.query.download) {
+        ctx.attachment(url.parse(ctx.path, true).pathname);
     }
 
     await next();

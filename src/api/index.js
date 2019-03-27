@@ -14,6 +14,7 @@ const OPTS = {
         formidable: {
             maxFileSize: config.max_file_size,
         },
+        onError: (e, ctx) => ctx.throw(422, e),
     },
     ratelimit: {
         interval: config.rate_limit_interval,
@@ -47,6 +48,7 @@ app.use(async (ctx, next) => {
             ctx.throw(404, 'Not Found');
         }
     } catch (err) {
+        console.log(err);
         ctx.status = err.status || 500;
 
         if (config.is_dev && ctx.status === 500) {

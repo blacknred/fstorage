@@ -3,7 +3,7 @@ FROM node:alpine
 # set working directory
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
-COPY . ./
+# COPY . ./
 
 # add `/usr/src/node_modules/.bin` to $PATH
 ENV PATH /usr/src/node_modules/.bin:$PATH
@@ -18,5 +18,5 @@ EXPOSE 5001
 # start app
 CMD ["yarn", "start"]
 
-# docker build . -t fserver
-# docker run -p 5001:5001 -it -v ~+:/usr/src/app fserver
+# docker build . -t fstorage
+# docker run -p 5001:5001 -it -v ~+:/usr/src/app fstorage

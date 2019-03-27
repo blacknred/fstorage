@@ -21,7 +21,7 @@ function decodeToken(token) {
 
 async function storageAccess(storage, ctx, next) {
     if (!Storage.exists(storage)) {
-        ctx.throw(422, 'The storage not exist');
+        ctx.throw(422, 'The storage not exists');
     }
 
     const token = ctx.headers['x-access-token'] || ctx.query.access_token;
@@ -63,7 +63,7 @@ async function fileAccess(file, ctx, next) {
     } = ctx.params;
 
     if (!Storage.exists(storage, file)) {
-        ctx.throw(422, 'The file not exist');
+        ctx.throw(422, 'The file not exists');
     }
 
     await next();

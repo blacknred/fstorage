@@ -67,8 +67,8 @@ class FStorage {
 
         const {
             is_gzip = FStorage[_IS_GZIP],
-                root_path = FStorage[_ROOT_PATH],
-                is_uid_key = FStorage[_IS_UID_KEY],
+            root_path = FStorage[_ROOT_PATH],
+            is_uid_key = FStorage[_IS_UID_KEY],
         } = opts;
 
         /** @private @type {Opts} opts */
@@ -523,22 +523,27 @@ class FStorage {
      * @return {string|boolean} Result
      */
     static exists(...args) {
-        if (args[1] && (
-            (this[_OPTS] && this[_OPTS].is_gzip === 'true')
-            || this[_IS_GZIP] === 'true'
-            || IS_GZIP
-        )) {
-            // eslint-disable-next-line
-            args[1] = `${args[1]}.gz`;
-        }
         try {
-            const path = args.reduce((a, c) => {
+            const path = args.reduce((a, c, i) => {
                 if (fs.existsSync(Path.join(a, c))) {
                     return Path.join(a, c);
                 }
 
                 if (fs.existsSync(Path.join(a, `.${c}`))) {
                     return Path.join(a, `.${c}`);
+                }
+
+                if (i) {
+                    // eslint-disable-next-line
+                    c += `.gz`;
+
+                    if (fs.existsSync(Path.join(a, c))) {
+                        return Path.join(a, c);
+                    }
+
+                    if (fs.existsSync(Path.join(a, `.${c}`))) {
+                        return Path.join(a, `.${c}`);
+                    }
                 }
 
                 throw new Error();

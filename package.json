@@ -6,11 +6,11 @@
     "author": "blcknrd <tretyakov.dmi@gmail.com>",
     "license": "MIT",
     "scripts": {
-        "start": "WORKER_COUNT=2 DEBUG=fstorage:* PORT=5000 nodemon src",
+        "start": "WORKER_COUNT=2 DEBUG=fstorage:* PORT=5001 nodemon src",
         "serve": "koa-cluster src/app",
         "lint": "eslint src",
         "test": "jest",
-        "test:integration": "jest --forceExit --detectOpenHandles tests/integration"
+        "test:integration": "jest tests/integration"
     },
     "dependencies": {
         "debug": "^3.2.6",
@@ -35,6 +35,6 @@
         "eslint-plugin-import": "^2.14.0",
         "jest": "^24.1.0",
         "nodemon": "^1.18.10",
-        "request-promise": "^4.2.4"
+        "request": "^2.88.0"
     }
 }
