@@ -48,7 +48,6 @@ app.use(async (ctx, next) => {
             ctx.throw(404, 'Not Found');
         }
     } catch (err) {
-        console.log(err);
         ctx.status = err.status || 500;
 
         if (config.is_dev && ctx.status === 500) {

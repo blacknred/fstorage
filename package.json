@@ -5,6 +5,9 @@
     "repository": "https://github.com/blacknred/fstorage.git",
     "author": "blcknrd <tretyakov.dmi@gmail.com>",
     "license": "MIT",
+    "engines": {
+        "node": ">=8.0.0"
+    },
     "scripts": {
         "start": "WORKER_COUNT=2 DEBUG=fstorage:* PORT=5001 nodemon src",
         "serve": "koa-cluster src/app",
@@ -36,5 +39,10 @@
         "jest": "^24.1.0",
         "nodemon": "^1.18.10",
         "request": "^2.88.0"
+    },
+    "nodemonConfig": {
+        "inspect": true,
+        "watch": ["index"],
+        "delay": "100"
     }
 }
