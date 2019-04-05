@@ -11,7 +11,7 @@
 |-----------------|-------------|-------------|-------------------------------------|
 | /new            | POST        | CREATE      | New storage with access credentials |
 | /token          | POST        | CREATE      | Create a new storage access token   |
-| /:storage       | POST        | CREATE      | Add (& process) file in the storage |
+| /:storage       | POST        | CREATE      | Add files to the storage            |
 | /:storage       | GET         | READ        | List of all files in the storage    |
 | /:storage/:file | GET         | READ        | Get file statistics                 |
 | /:storage       | PUT         | UPDATE      | Update storage with files           |
@@ -53,7 +53,7 @@
     $docker run -it -p 5000:5000 fserver
     ```
 
-1. Go to `http://localhost:5000/api/v1/storage`
+1. Go to `http://localhost:5000/`
 
 ### Run tests
 

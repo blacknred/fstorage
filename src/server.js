@@ -27,11 +27,11 @@ function onError(error) {
 
     switch (error.code) {
         case 'EACCES':
-            console.error(`${bind} requires elevated privileges`);
+            debug(`${bind} requires elevated privileges`);
             process.exit(1);
             break;
         case 'EADDRINUSE':
-            console.error(`${bind} is allready in use`);
+            debug(`${bind} is allready in use`);
             process.exit(1);
             break;
         default:

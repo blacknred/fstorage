@@ -55,7 +55,7 @@ app.use(async (ctx, next) => {
         }
 
         ctx.body = {
-            status: 'error',
+            ok: false,
             message: err.message
         };
     }

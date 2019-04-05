@@ -1,31 +1,39 @@
 {
-    "extends": "airbnb-base",
-    "plugins": [
-      "import"
-    ],
-    "rules": {
-      "arrow-body-style": "off",
-      "indent": [0, "tab"],
-      "quotes": [2, "single", {"allowTemplateLiterals": true}],
-      "comma-dangle": "off",
-      "no-plusplus":"off",
-      "no-console":"off",
-      "no-underscore-dangle":"off",
-      "camelcase":"off"
-    },
-    "env": {
-      "es6": true,
-      "node": true,
-      "mocha": true
-    },
-    "globals": {
-      "describe": false,
-      "beforeAll": false,
-      "beforeEach": false,
-      "afterEach": false,
-      "test": false,
-      "expect": false,
-      "FormData": false
+  "extends": "airbnb-base",
+  "plugins": [
+    "import"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
     }
-  }
-  
+  },
+  "rules": {
+    "arrow-body-style": "off",
+    "indent": [0, "tab"],
+    "quotes": [2, "single", {
+      "allowTemplateLiterals": true
+    }],
+    "comma-dangle": "off",
+    "no-plusplus": "off",
+    "no-console": "off",
+    "no-underscore-dangle": "off",
+    "camelcase": "off"
+  },
+  "env": {
+    "es6": true,
+    "node": true,
+    "mocha": true
+  },
+  "globals": {
+    "describe": false,
+    "beforeAll": false,
+    "beforeEach": false,
+    "afterEach": false,
+    "test": false,
+    "expect": false,
+    "FormData": false
+  },
+}

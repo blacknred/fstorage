@@ -1,0 +1,38 @@
+<div class="sections">
+    <h2 class="section-title">Restore storage access</h2>
+
+    <form action="/restore" method="post">
+        <div class="list-card">
+            <span class="exp">Secret*</span>
+            <div>
+                <fieldset>
+                    <input placeholder="secret key" type="text" name="secretKey" tabindex="1" required autofocus>
+                </fieldset>
+            </div>
+        </div>
+
+        <div class="list-card">
+            <span class="exp">Email</span>
+            <div>
+                <fieldset>
+                    <input placeholder="send credentials to" type="email" name="email" tabindex="2">
+                </fieldset>
+            </div>
+        </div>
+
+        <div class="list-card">
+            <span class="exp">Day span</span>
+            <div>
+                <fieldset>
+                    <input placeholder="will be purged after" type="number" name="tokenDayout" tabindex="2">
+                </fieldset>
+            </div>
+        </div>
+
+        <div class="list-card">
+            <fieldset>
+                <button class="sub-title" type="submit" data-submit="Create">Restore</button>
+            </fieldset>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+{{> head}}
+
+<body>
+
+  {{!-- Header --}}
+  <div class="container">
+    <div class="header">
+      <h1 class="title"><strong>F</strong> Storage</h1>
+      <span class="sub-title">B</span>
+      <span class="desc">free file storage</span>
+    </div>
+    {{!-- <h2 class="lead">Development and design of web applications
+        for startups and large companies</h2> --}}
+  </div>
+
+  {{!-- Center --}}
+  <div class="container">
+
+    {{!-- Nav --}}
+    <div class="sections">
+      <h2 class="section-title">How to</h2>
+
+      <div class="list-card">
+        <div>
+          <h3><a href="/">Create</a></h3>
+          <span>Create a repository. Credentials on the client side (token + secret).</span>
+        </div>
+      </div>
+
+      <div class="list-card">
+        <div>
+          <h3><a href="/apis">API access</a></h3>
+          <span>Use the token to access the repository.</span>
+        </div>
+      </div>
+
+      <div class="list-card">
+        <div>
+          <h3><a href="/restore">Restore Access</a></h3>
+          <span>Use the secret to restore access to the repository.</span>
+        </div>
+      </div>
+
+      <div class="list-card">
+        <div>
+          <h3>Usage</h3>
+          <span>`GET /:storage/:filename?dl=true`</span>
+        </div>
+      </div>
+    </div>
+
+    {{!-- Dynamic --}}
+    {{#if create}}
+      {{> create}}
+    {{/if}}
+
+    {{#if created}}
+      {{> created}}
+    {{/if}}
+
+    {{#if restore}}
+      {{> restore}}
+    {{/if}}
+
+    {{#if restored}}
+      {{> restored}}
+    {{/if}}
+
+    {{#if apis}}
+      {{> apis}}
+    {{/if}}
+    
+  </div>
+
+  {{!-- Footer --}}
+  <footer class="container">
+    <span>© Design by </span><a href="https://github.com/blacknred">blacknred</a>,
+    <span>Opensourced on </span><a href="https://github.com/blacknred/fstorage">GitHub</a>
+  </footer>
+
+</body>
+
+</html>
