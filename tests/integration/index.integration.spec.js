@@ -3,7 +3,7 @@ const promisify = require('util').promisify;
 
 //  --forceExit --detectOpenHandles
 const TEST_DATA = {
-    serverUrl: 'http://localhost:5001/api/v1',
+    serverUrl: 'http://127.0.0.1:5001/api/v1',
     storageName: 'test',
     email: 'test@test.com',
     tokenDayout: 1,
