@@ -2,7 +2,8 @@ const cpus = require('os').cpus();
 const cluster = require('cluster');
 const debug = require('debug')('fstorage:clusters');
 
-const workerCount = process.env.WORKER_COUNT || cpus;
+let workerCount = process.env.WORKER_COUNT || process.env.WEB_CONCURRENCY;
+workerCount = workerCount || cpus;
 
 if (process.env.NODE_ENV === 'production' && cluster.isMaster) {
   workerCount.forEach(() => cluster.fork());
