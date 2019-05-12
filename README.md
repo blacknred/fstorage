@@ -1,5 +1,7 @@
 # FStorage - file storage
 
+[![Build Status](https://travis-ci.org/blacknred/fstorage.svg?branch=master)](https://travis-ci.org/blacknred/fstorage)
+
  1. Create a repository. Credentials on the client side (token + secret).
  2. Use the token to access the repository.
  3. Use the secret to restore access to the repository.
